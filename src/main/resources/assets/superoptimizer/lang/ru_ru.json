@@ -8,5 +8,8 @@
   "superoptimizer.option.block_entity": "Culling Block Entity: %s",
   "superoptimizer.option.workers": "Потоков SuperOptimizer: %s",
   "superoptimizer.option.reserved": "Оставлять CPU-ядер свободными: %s",
-  "superoptimizer.option.pause_motion": "Пауза при движении камеры: %s"
+  "superoptimizer.option.pause_motion": "Пауза при движении камеры: %s",
+  "superoptimizer.option.iris_lock": "Не отключать culling при Iris: %s",
+  "superoptimizer.option.entity_culling_lock": "Не отключать culling при Entity Culling: %s",
+  "superoptimizer.option.safe_profile": "Восстановить безопасный профиль"
 }
