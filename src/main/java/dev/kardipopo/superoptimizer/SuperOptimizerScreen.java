@@ -201,7 +201,7 @@ public final class SuperOptimizerScreen extends Screen {
                 y = toggle(y, "superoptimizer.option.iris_lock", "superoptimizer.desc.iris_lock",
                         () -> config.disableCullingWithIris, v -> config.disableCullingWithIris = v);
                 y = toggle(y, "superoptimizer.option.entity_culling_lock", "superoptimizer.desc.entity_culling_lock",
-                        () -> config.disableCullingWithEntityCullingMod, v -> config.disableCullingWithEntityCullingMod);
+                        () -> config.disableCullingWithEntityCullingMod, v -> config.disableCullingWithEntityCullingMod = v);
                 y = status(y, "superoptimizer.compat.iris", () -> Component.literal(
                         net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("iris")
                                 ? "обнаружен" : "не установлен"));
@@ -381,7 +381,7 @@ public final class SuperOptimizerScreen extends Screen {
             int y = row.y() - (int) scroll;
             boolean visible = y + 36 >= contentTop && y <= contentBottom;
             row.hitbox().setY(y);
-            row.hitbox().visible = visible;
+            row.hitbox().setVisible(visible);
         }
     }
 
