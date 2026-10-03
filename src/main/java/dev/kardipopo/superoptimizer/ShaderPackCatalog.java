@@ -26,6 +26,10 @@ public final class ShaderPackCatalog {
         return PACKS.get();
     }
 
+    public static int fingerprint() {
+        return PACKS.get().hashCode();
+    }
+
     public static void refresh(Minecraft client) {
         Runnable scan = () -> {
             List<Path> found = new ArrayList<>();
