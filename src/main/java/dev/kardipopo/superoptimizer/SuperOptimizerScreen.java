@@ -558,7 +558,7 @@ public final class SuperOptimizerScreen extends Screen {
                     SuperOptimizerClient.Preset.ADVANCED,
                     SuperOptimizerClient.Preset.MICROWAVE
             };
-            int next = (current + 1) % order.length;
+            int next = current < 0 ? 0 : (current + 1) % order.length;
             applyProfile(order[next]);
         }, mainX, y, mainW, 34);
         b.setTooltip(Tooltip.create(Component.translatable("superoptimizer.desc.profile.current")));
@@ -622,7 +622,7 @@ public final class SuperOptimizerScreen extends Screen {
             case "BALANCED" -> 1;
             case "ADVANCED" -> 2;
             case "MICROWAVE" -> 3;
-            default -> 1;
+            default -> -1;
         };
     }
 
@@ -718,6 +718,12 @@ public final class SuperOptimizerScreen extends Screen {
         String backend = Minecraft.getInstance().options.preferredGraphicsBackend().toString();
         String right = "Графический API: " + backend;
         g.text(font, Component.literal(right), Math.max(mainX, width - font.width(right) - 18), 17, 0xFF9BA9BD, false);
+        int lx = Math.max(mainX, width - 285);
+        int ly = 31;
+        g.text(font, Component.literal("BEST"), lx, ly, 0xFF20D7A4, true);
+        g.text(font, Component.literal("MEDIUM"), lx + 45, ly, 0xFFFFD166, true);
+        g.text(font, Component.literal("LOW"), lx + 103, ly, 0xFFFF6B6B, true);
+        g.text(font, Component.literal("UNKNOWN"), lx + 135, ly, 0xFF8793A8, true);
     }
 
     private void drawSidebar(GuiGraphicsExtractor g, int mouseX, int mouseY) {
