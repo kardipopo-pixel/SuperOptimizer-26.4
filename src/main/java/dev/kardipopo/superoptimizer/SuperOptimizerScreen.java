@@ -47,10 +47,11 @@ public final class SuperOptimizerScreen extends Screen {
     }
 
     private Button toggle(String key, boolean value, java.util.function.Consumer<Boolean> setter, int cx, int y) {
-        return Button.builder(label(key, value), b -> {
-            value = !value;
-            setter.accept(value);
-            b.setMessage(label(key, value));
+        final boolean[] state = {value};
+        return Button.builder(label(key, state[0]), b -> {
+            state[0] = !state[0];
+            setter.accept(state[0]);
+            b.setMessage(label(key, state[0]));
         }).bounds(cx - 155, y, 310, 20).build();
     }
 
