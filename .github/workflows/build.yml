@@ -26,32 +26,48 @@ jobs:
           gradle-version: '9.7.1'
       - name: Build with real Fabric/Minecraft dependencies
         run: gradle --no-daemon clean build
-      - name: Inspect 26.4 rendering API
+      - name: Verify 26.4 API and production JAR
         shell: bash
         run: |
           set -euo pipefail
           JAR="$(python scripts/find_minecraft_client_jar.py)"
-          echo "Minecraft client jar: $JAR"
-          echo "== EntityRenderDispatcher =="
-          javap -classpath "$JAR" -p net.minecraft.client.renderer.entity.EntityRenderDispatcher
-          echo "== LevelRenderer =="
-          javap -classpath "$JAR" -p net.minecraft.client.renderer.LevelRenderer
-          echo "== LevelRenderState =="
-          javap -classpath "$JAR" -p net.minecraft.client.renderer.state.level.LevelRenderState
-          echo "== SectionRenderDispatcher.RenderSection =="
-          javap -classpath "$JAR" -p 'net.minecraft.client.renderer.chunk.SectionRenderDispatcher$RenderSection'
-          echo "== SectionOcclusionGraph =="
-          javap -classpath "$JAR" -p net.minecraft.client.renderer.SectionOcclusionGraph
-          echo "== SectionPos =="
-          javap -classpath "$JAR" -p net.minecraft.core.SectionPos
-          echo "== EntityRenderState =="
-          javap -classpath "$JAR" -p net.minecraft.client.renderer.entity.state.EntityRenderState
-          echo "== BlockEntityRenderState =="
-          javap -classpath "$JAR" -p net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState
-          echo "== LevelRenderer.submitEntities bytecode =="
-          javap -classpath "$JAR" -p -c net.minecraft.client.renderer.LevelRenderer | awk '/private void submitEntities\(/,/private void submitBlockEntities\(/' | sed -n '1,900p'
-          echo "== LevelRenderer.submitBlockEntities bytecode =="
-          javap -classpath "$JAR" -p -c net.minecraft.client.renderer.LevelRenderer | awk '/private void submitBlockEntities\(/,/private void submitBlockDestroyAnimation\(/' | sed -n '1,900p'
+
+          javap -classpath "$JAR" -p net.minecraft.client.renderer.LevelRenderer |
+            grep -q 'submitEntities'
+          javap -classpath "$JAR" -p net.minecraft.client.renderer.LevelRenderer |
+            grep -q 'submitBlockEntities'
+          javap -classpath "$JAR" -p net.minecraft.client.renderer.entity.EntityRenderDispatcher |
+            grep -q 'submit'
+          javap -classpath "$JAR" -p net.minecraft.client.renderer.chunk.SectionRenderDispatcher\$RenderSection |
+            grep -q 'getRenderOrigin'
+          javap -classpath "$JAR" -p net.minecraft.client.renderer.SectionOcclusionGraph |
+            grep -q 'expectedChunks'
+
+          MOD_JAR="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' -print -quit)"
+          test -n "$MOD_JAR"
+          python - "$MOD_JAR" <<'PY'
+import json
+import sys
+import zipfile
+
+jar_path = sys.argv[1]
+with zipfile.ZipFile(jar_path) as z:
+    names = set(z.namelist())
+    data = json.loads(z.read("fabric.mod.json"))
+    assert data["id"] == "superoptimizer"
+    assert "superoptimizer.mixins.json" in data["mixins"]
+    assert "dev/kardipopo/superoptimizer/mixin/LevelRendererEntityCullingMixin.class" in names
+    assert "dev/kardipopo/superoptimizer/mixin/LevelRendererBlockEntityCullingMixin.class" in names
+    assert "dev/kardipopo/superoptimizer/mixin/MinecraftClientTickMixin.class" not in names
+    assert not any(n.endswith(".java") for n in names)
+
+    class_bytes = z.read("dev/kardipopo/superoptimizer/SuperOptimizerClient.class")
+    major = int.from_bytes(class_bytes[6:8], "big")
+    assert major == 69, f"Expected Java 25 class file major 69, got {major}"
+
+print("Production JAR checks passed:", jar_path)
+PY
+
       - name: Upload mod JAR
         uses: actions/upload-artifact@v4
         with:
