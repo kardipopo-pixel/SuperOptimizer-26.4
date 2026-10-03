@@ -257,5 +257,30 @@ public final class SuperOptimizerClient implements ClientModInitializer {
     }
 
     public static SuperOptimizerConfig config() { return config; }
+
+    public static boolean submitBackgroundTask(Runnable task) {
+        if (task == null) return false;
+        SuperOptimizerConfig c = config;
+        if (c == null || !c.enabled || executor == null) return false;
+
+        if (c.smartFrameBudget && PerformanceProfiler.lastFrameMs() > Math.max(16.7, c.frameBudgetMs * 2.0)) {
+            SuperOptimizerLog.info("Smart Frame Budget: фоновая задача отложена из-за тяжёлого кадра.");
+            return false;
+        }
+
+        try {
+            executor.execute(() -> {
+                try {
+                    task.run();
+                } catch (Throwable t) {
+                    SelfHealingManager.reportFailure("background", t);
+                }
+            });
+            return true;
+        } catch (RuntimeException e) {
+            SuperOptimizerLog.warn("Task Backpressure: задача отклонена: " + e.getMessage());
+            return false;
+        }
+    }
     public static ExecutorService executor() { return executor; }
 }
