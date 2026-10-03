@@ -4,12 +4,8 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
-import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +34,7 @@ public final class SuperOptimizerClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         Path configDir = Minecraft.getInstance().gameDirectory.toPath().resolve("config");
+
         config = SuperOptimizerConfig.load(configDir);
         SuperOptimizerLog.init(configDir, config.fileLogging);
         applyConfig();
@@ -55,23 +52,8 @@ public final class SuperOptimizerClient implements ClientModInitializer {
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openSettings.consumeClick()) {
-                client.gui.setScreen(new SuperOptimizerScreen(client.gui.screen(), config));
+                client.setScreenAndShow(new SuperOptimizerScreen(null, config));
             }
-        });
-
-        ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-            if (!(screen instanceof OptionsScreen)) return;
-
-            boolean alreadyAdded = Screens.getWidgets(screen).stream().anyMatch(widget ->
-                widget instanceof Button
-                    && ((Button) widget).getMessage().equals(Component.translatable("superoptimizer.button")));
-            if (alreadyAdded) return;
-
-            Screens.getWidgets(screen).add(Button.builder(
-                    Component.translatable("superoptimizer.button"),
-                    button -> client.gui.setScreen(new SuperOptimizerScreen(screen, config)))
-                .bounds((screen.width / 2) - 155, screen.height - 52, 310, 20)
-                .build());
         });
 
         verifyMixinTargetLoaded();
@@ -83,9 +65,10 @@ public final class SuperOptimizerClient implements ClientModInitializer {
             executor.shutdownNow();
             executor = null;
         }
-        if (config == null || !config.enabled || !config.shaderScanAsync) {
+
+        if (config == null || !config.enabled || !config.backgroundTasks || !config.shaderScanAsync) {
             if (config != null && !config.enabled) {
-                SuperOptimizerLog.info("Оптимизатор отключён.");
+                SuperOptimizerLog.info("Оптимизатор отключён пользователем.");
             }
             return;
         }
@@ -101,51 +84,78 @@ public final class SuperOptimizerClient implements ClientModInitializer {
             t.setPriority(Math.max(Thread.MIN_PRIORITY, Thread.NORM_PRIORITY - 2));
             return t;
         };
+
         executor = Executors.newFixedThreadPool(workers, factory);
-        SuperOptimizerLog.info("CPU worker pool: " + workers + " поток(ов), резерв: " + config.reservedCores);
+        SuperOptimizerLog.info("CPU worker pool: " + workers + ", резерв CPU-ядер: " + config.reservedCores);
     }
 
     public static void applyPreset(Preset preset) {
         switch (preset) {
             case MICROWAVE -> {
+                // Maximum performance profile: disable background diagnostics and use
+                // aggressive safe render submission filtering.
                 config.enabled = true;
                 config.entityCulling = true;
-                config.blockEntityCulling = false;
+                config.blockEntityCulling = true;
                 config.pauseDuringCameraMotion = true;
+                config.skipNearEntityCulling = false;
+                config.nearEntityDistance = 0;
                 config.disableCullingWithIris = true;
                 config.disableCullingWithEntityCullingMod = true;
+                config.backgroundTasks = false;
+                config.shaderScanAsync = false;
+                config.diagnostics = false;
+                config.fileLogging = false;
+                config.reservedCores = 1;
                 config.workerThreads = 1;
-                config.reservedCores = Math.max(2, Math.min(4, Runtime.getRuntime().availableProcessors() / 2));
             }
             case LIGHT -> {
                 config.enabled = true;
                 config.entityCulling = true;
                 config.blockEntityCulling = false;
                 config.pauseDuringCameraMotion = true;
+                config.skipNearEntityCulling = true;
+                config.nearEntityDistance = 12;
                 config.disableCullingWithIris = true;
                 config.disableCullingWithEntityCullingMod = true;
+                config.backgroundTasks = true;
+                config.shaderScanAsync = true;
                 config.workerThreads = Math.max(1, Math.min(2, Runtime.getRuntime().availableProcessors() / 4));
                 config.reservedCores = Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
+                config.diagnostics = true;
+                config.fileLogging = false;
             }
             case BALANCED -> {
                 config.enabled = true;
                 config.entityCulling = true;
                 config.blockEntityCulling = true;
                 config.pauseDuringCameraMotion = true;
+                config.skipNearEntityCulling = true;
+                config.nearEntityDistance = 12;
                 config.disableCullingWithIris = true;
                 config.disableCullingWithEntityCullingMod = true;
+                config.backgroundTasks = true;
+                config.shaderScanAsync = true;
                 config.workerThreads = Math.max(1, Math.min(3, Runtime.getRuntime().availableProcessors() / 3));
                 config.reservedCores = Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
+                config.diagnostics = true;
+                config.fileLogging = true;
             }
             case ADVANCED -> {
                 config.enabled = true;
                 config.entityCulling = true;
                 config.blockEntityCulling = true;
                 config.pauseDuringCameraMotion = true;
+                config.skipNearEntityCulling = false;
+                config.nearEntityDistance = 0;
                 config.disableCullingWithIris = true;
                 config.disableCullingWithEntityCullingMod = true;
+                config.backgroundTasks = true;
+                config.shaderScanAsync = true;
                 config.workerThreads = Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() / 2));
                 config.reservedCores = Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
+                config.diagnostics = true;
+                config.fileLogging = true;
             }
         }
 
