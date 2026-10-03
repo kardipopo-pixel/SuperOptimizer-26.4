@@ -48,7 +48,7 @@ public final class ParticleOptimizer {
                 : c.maxParticles;
 
         try {
-            int count = Minecraft.getInstance().particleEngine.countParticles();
+            int count = parseCount(Minecraft.getInstance().particleEngine.countParticles());
             if (count >= max) {
                 rejectedCount.increment();
                 return false;
@@ -65,8 +65,22 @@ public final class ParticleOptimizer {
 
     public static int currentCount() {
         try {
-            return Minecraft.getInstance().particleEngine.countParticles();
+            return parseCount(Minecraft.getInstance().particleEngine.countParticles());
         } catch (Throwable ignored) {
+            return -1;
+        }
+    }
+
+    private static int parseCount(String raw) {
+        if (raw == null) return -1;
+        int end = raw.length() - 1;
+        while (end >= 0 && !Character.isDigit(raw.charAt(end))) end--;
+        if (end < 0) return -1;
+        int start = end;
+        while (start >= 0 && Character.isDigit(raw.charAt(start))) start--;
+        try {
+            return Integer.parseInt(raw.substring(start + 1, end + 1));
+        } catch (NumberFormatException e) {
             return -1;
         }
     }
