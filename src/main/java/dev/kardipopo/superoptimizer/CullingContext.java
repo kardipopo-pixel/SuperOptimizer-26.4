@@ -175,14 +175,32 @@ public final class CullingContext {
         }
 
         SuperOptimizerConfig config = SuperOptimizerClient.config();
-        if (config != null && config.skipNearEntityCulling) {
-            var camera = Minecraft.getInstance().getCameraEntity();
-            if (camera != null) {
-                double dx = state.x - camera.getX();
-                double dy = state.y - camera.getY();
-                double dz = state.z - camera.getZ();
+        var camera = Minecraft.getInstance().getCameraEntity();
+
+        if (camera != null && config != null) {
+            double dx = state.x - camera.getX();
+            double dy = state.y - camera.getY();
+            double dz = state.z - camera.getZ();
+            double distanceSq = dx * dx + dy * dy + dz * dz;
+
+            if (config.skipNearEntityCulling) {
                 double near = config.nearEntityDistance;
-                if (dx * dx + dy * dy + dz * dz < near * near) return true;
+                if (distanceSq < near * near) return true;
+            }
+
+            // Very conservative directional test: only skip entities that are
+            // clearly behind the camera (more than ~104 degrees off-axis).
+            // This is a render-submission optimization only; entity ticking is untouched.
+            if (config.directionalEntityCulling && distanceSq > 64.0) {
+                double length = Math.sqrt(distanceSq);
+                if (length > 0.0001) {
+                    net.minecraft.world.phys.Vec3 view = camera.getViewVector(1.0f);
+                    double dot = (view.x * dx + view.y * dy + view.z * dz) / length;
+                    if (dot < -0.25) {
+                        entityCulled++;
+                        return false;
+                    }
+                }
             }
         }
 
