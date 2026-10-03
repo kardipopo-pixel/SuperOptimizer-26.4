@@ -134,6 +134,9 @@ public final class SuperOptimizerScreen extends Screen {
         y = cycle("superoptimizer.option.near_distance", "superoptimizer.desc.near_distance",
             config.nearEntityDistance, 0, 64, 4, v -> config.nearEntityDistance = v, center, width, y);
 
+        y = toggle("superoptimizer.option.directional", "superoptimizer.desc.directional",
+            config.directionalEntityCulling, v -> config.directionalEntityCulling = v, center, width, y);
+
         return y;
     }
 
@@ -162,6 +165,8 @@ public final class SuperOptimizerScreen extends Screen {
             config.skipNearEntityCulling, v -> config.skipNearEntityCulling = v, center, width, y);
         y = cycle("superoptimizer.option.near_distance", "superoptimizer.desc.near_distance",
             config.nearEntityDistance, 0, 64, 4, v -> config.nearEntityDistance = v, center, width, y);
+        y = toggle("superoptimizer.option.directional", "superoptimizer.desc.directional",
+            config.directionalEntityCulling, v -> config.directionalEntityCulling = v, center, width, y);
         return y;
     }
 
