@@ -38,6 +38,12 @@ jobs:
           javap -classpath "$JAR" -p net.minecraft.client.renderer.LevelRenderer
           echo "== LevelRenderState =="
           javap -classpath "$JAR" -p net.minecraft.client.renderer.state.level.LevelRenderState
+          echo "== SectionRenderDispatcher.RenderSection =="
+          javap -classpath "$JAR" -p 'net.minecraft.client.renderer.chunk.SectionRenderDispatcher$RenderSection'
+          echo "== SectionOcclusionGraph =="
+          javap -classpath "$JAR" -p net.minecraft.client.renderer.SectionOcclusionGraph
+          echo "== SectionPos =="
+          javap -classpath "$JAR" -p net.minecraft.core.SectionPos
           echo "== EntityRenderState =="
           javap -classpath "$JAR" -p net.minecraft.client.renderer.entity.state.EntityRenderState
           echo "== BlockEntityRenderState =="
