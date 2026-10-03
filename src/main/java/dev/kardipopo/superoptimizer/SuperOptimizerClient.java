@@ -25,7 +25,6 @@ public final class SuperOptimizerClient implements ClientModInitializer {
     private static SuperOptimizerConfig config;
     private static ExecutorService executor;
     private static KeyMapping openSettings;
-    private static int diagnosticsTicks;
 
     @Override
     public void onInitializeClient() {
@@ -50,8 +49,23 @@ public final class SuperOptimizerClient implements ClientModInitializer {
             }
         });
 
+        ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
+            if (!(screen instanceof OptionsScreen)) return;
+
+            boolean alreadyAdded = Screens.getWidgets(screen).stream().anyMatch(widget ->
+                widget instanceof Button
+                    && ((Button) widget).getMessage().equals(Component.translatable("superoptimizer.button")));
+            if (alreadyAdded) return;
+
+            Screens.getWidgets(screen).add(Button.builder(
+                    Component.translatable("superoptimizer.button"),
+                    button -> client.gui.setScreen(new SuperOptimizerScreen(screen, config)))
+                .bounds((screen.width / 2) - 155, screen.height - 52, 310, 20)
+                .build());
+        });
+
         verifyMixinTargetLoaded();
-        LOGGER.info("SuperOptimizer 26.4: clean client bootstrap loaded.");
+        LOGGER.info("SuperOptimizer 26.4: client bootstrap + visible settings integration loaded.");
     }
 
     public static synchronized void rebuildExecutor() {
