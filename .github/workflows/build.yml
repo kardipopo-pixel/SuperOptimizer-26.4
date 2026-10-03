@@ -30,29 +30,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          JAR="$(python - <<'PY'
-import os
-import zipfile
-
-root = os.path.expanduser("~/.gradle/caches")
-needle = "net/minecraft/client/renderer/entity/EntityRenderDispatcher.class"
-
-for base, _, files in os.walk(root):
-    for name in files:
-        if not name.endswith(".jar"):
-            continue
-        path = os.path.join(base, name)
-        try:
-            with zipfile.ZipFile(path) as z:
-                if needle in z.namelist():
-                    print(path)
-                    raise SystemExit(0)
-        except (OSError, zipfile.BadZipFile):
-            pass
-
-raise SystemExit("Minecraft client jar not found")
-PY
-          )"
+          JAR="$(python scripts/find_minecraft_client_jar.py)"
           echo "Minecraft client jar: $JAR"
           echo "== EntityRenderDispatcher =="
           javap -classpath "$JAR" -p net.minecraft.client.renderer.entity.EntityRenderDispatcher
