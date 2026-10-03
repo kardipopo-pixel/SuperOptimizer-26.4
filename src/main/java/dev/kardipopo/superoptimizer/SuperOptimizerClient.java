@@ -138,7 +138,7 @@ public final class SuperOptimizerClient implements ClientModInitializer {
                 config.backgroundTasks = true;
                 config.workerThreads = 1;
                 config.reservedCores = 1;
-                config.diagnostics = false;
+                config.showTelemetry = false;
                 config.fileLogging = false;
             }
             case LIGHT -> {
@@ -162,7 +162,7 @@ public final class SuperOptimizerClient implements ClientModInitializer {
                 config.backgroundTasks = true;
                 config.workerThreads = Math.max(1, Math.min(2, Runtime.getRuntime().availableProcessors() / 4));
                 config.reservedCores = Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
-                config.diagnostics = true;
+                config.showTelemetry = true;
                 config.fileLogging = false;
             }
             case BALANCED -> {
@@ -187,7 +187,7 @@ public final class SuperOptimizerClient implements ClientModInitializer {
                 config.backgroundTasks = true;
                 config.workerThreads = Math.max(1, Math.min(3, Runtime.getRuntime().availableProcessors() / 3));
                 config.reservedCores = Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
-                config.diagnostics = true;
+                config.showTelemetry = true;
                 config.fileLogging = true;
             }
             case ADVANCED -> {
@@ -213,7 +213,7 @@ public final class SuperOptimizerClient implements ClientModInitializer {
                 config.backgroundTasks = true;
                 config.workerThreads = Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() / 2));
                 config.reservedCores = Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
-                config.diagnostics = true;
+                config.showTelemetry = true;
                 config.fileLogging = true;
             }
         }
