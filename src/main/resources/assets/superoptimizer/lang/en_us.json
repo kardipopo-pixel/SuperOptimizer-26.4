@@ -11,5 +11,6 @@
   "superoptimizer.option.pause_motion": "Pause while camera moves: %s",
   "superoptimizer.option.iris_lock": "Disable culling with Iris: %s",
   "superoptimizer.option.entity_culling_lock": "Disable culling with Entity Culling: %s",
-  "superoptimizer.option.safe_profile": "Restore safe profile"
+  "superoptimizer.option.safe_profile": "Restore safe profile",
+  "superoptimizer.button": "SuperOptimizer"
 }
