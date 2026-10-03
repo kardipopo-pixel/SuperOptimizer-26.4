@@ -37,6 +37,11 @@ public final class CullingContext {
     );
 
     private static boolean active;
+    private static double lastCamX;
+    private static double lastCamY;
+    private static double lastCamZ;
+    private static boolean haveCamera;
+    private static boolean lastActive;
     private static long entityChecks;
     private static long entityCulled;
     private static long blockEntityChecks;
@@ -56,6 +61,26 @@ public final class CullingContext {
             : blockEntities ? "culling block entity выключен" : "culling сущностей выключен");
 
         if (!active) return;
+
+        var camera = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        if (config.pauseDuringCameraMotion && haveCamera) {
+            double dx = camera.x - lastCamX;
+            double dy = camera.y - lastCamY;
+            double dz = camera.z - lastCamZ;
+            if (dx * dx + dy * dy + dz * dz > 0.0625) {
+                active = false;
+            }
+        }
+        lastCamX = camera.x;
+        lastCamY = camera.y;
+        lastCamZ = camera.z;
+        haveCamera = true;
+
+        if (!active) {
+            if (lastActive) SuperOptimizerLog.info("Culling временно приостановлен: камера движется.");
+            lastActive = false;
+            return;
+        }
 
         if (config.disableCullingWithIris
                 && FabricLoader.getInstance().isModLoaded("iris")) {
