@@ -152,7 +152,7 @@ public final class SuperOptimizerScreen extends Screen {
     }
 
     private void addActionRow(String key, String descKey, java.util.function.Consumer<Button> action, int y) {
-        Button b = Button.builder(Component.translatable(key), action)
+        Button b = Button.builder(Component.translatable(key), button -> action.accept(button))
             .bounds(this.width / 2 - 155, y, 310, 20).build();
         rows.add(new Row(b, Component.translatable(descKey), y));
         addRenderableWidget(b);
@@ -161,7 +161,7 @@ public final class SuperOptimizerScreen extends Screen {
     private void addPresetRow(String key, String descKey, SuperOptimizerClient.Preset preset, int y) {
         addActionRow(key, descKey, b -> {
             SuperOptimizerClient.applyPreset(preset);
-            minecraft.setScreen(new SuperOptimizerScreen(parent, config, category));
+            minecraft.gui.setScreen(new SuperOptimizerScreen(parent, config, category));
         }, y);
         addActionRow("superoptimizer.action.apply_return", "superoptimizer.desc.apply_return",
             b -> { SuperOptimizerClient.applyPreset(preset); close(); }, y + 48);
@@ -188,9 +188,7 @@ public final class SuperOptimizerScreen extends Screen {
         for (Row row : rows) {
             int y = row.baseY() - (int) scroll;
             row.button().setY(y);
-            boolean visible = y + row.button().getHeight() >= top && y <= bottom;
-            row.button().visible = visible;
-            row.button().active = visible;
+
         }
     }
 
