@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "superoptimizer",
+  "version": "${version}",
+  "name": "SuperOptimizer",
+  "description": "Экспериментальный клиентский оптимизатор. Консервативная базовая сборка без вмешательства в рендеринг.",
+  "authors": ["kardipopo-pixel"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.kardipopo.superoptimizer.SuperOptimizerClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "26.4-alpha.2",
+    "java": ">=25"
+  }
+}
