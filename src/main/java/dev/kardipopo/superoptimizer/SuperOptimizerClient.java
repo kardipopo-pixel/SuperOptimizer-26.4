@@ -40,7 +40,7 @@ public final class SuperOptimizerClient implements ClientModInitializer {
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openSettings.consumeClick()) {
-                client.gui.setScreen(new SuperOptimizerScreen(client.gui.getCurrentScreen(), config));
+                client.gui.setScreen(new SuperOptimizerScreen(null, config));
             }
         });
 
