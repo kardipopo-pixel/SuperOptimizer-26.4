@@ -71,6 +71,7 @@ public final class SuperOptimizerClient implements ClientModInitializer {
                     PerformanceProfiler.finishBenchmark(dir);
                 }
             }
+            MemoryPressureController.tick();
             AdaptivePerformanceController.tick();
         });
 
