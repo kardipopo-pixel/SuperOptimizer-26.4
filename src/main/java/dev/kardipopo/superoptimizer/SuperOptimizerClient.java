@@ -50,6 +50,8 @@ public final class SuperOptimizerClient implements ClientModInitializer {
             category
         ));
 
+        GraphicsSettingsIntegration.init();
+
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openSettings.consumeClick()) {
                 client.setScreenAndShow(new SuperOptimizerScreen(null, config));
