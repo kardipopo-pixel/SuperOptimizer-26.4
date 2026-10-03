@@ -100,5 +100,6 @@
   "superoptimizer.optimizations.culling": "Culling сущностей",
   "superoptimizer.optimizations.background": "Фоновые задачи",
   "superoptimizer.optimizations.workers": "CPU-потоки",
-  "superoptimizer.optimizations.reserved": "Резерв CPU-ядер"
+  "superoptimizer.optimizations.reserved": "Резерв CPU-ядер",
+  "superoptimizer.button.open_graphics": "Настройки SuperOptimizer"
 }
