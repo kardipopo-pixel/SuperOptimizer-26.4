@@ -20,6 +20,7 @@ public final class ShaderPackScreen extends Screen {
     private double maxScroll;
     private int lastFingerprint = Integer.MIN_VALUE;
     private boolean refreshQueued;
+    private boolean closed;
 
     public ShaderPackScreen(Screen parent, SuperOptimizerConfig config) {
         super(Component.translatable("superoptimizer.shaders.title"));
@@ -112,6 +113,12 @@ public final class ShaderPackScreen extends Screen {
     }
 
     @Override
+    public void onClose() {
+        closed = true;
+        minecraft.setScreenAndShow(parent);
+    }
+
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         if (mouseY >= 68 && mouseY <= this.height - 36 && maxScroll > 0) {
             scroll = Math.max(0, Math.min(maxScroll, scroll - verticalAmount * 24));
@@ -130,7 +137,7 @@ public final class ShaderPackScreen extends Screen {
             refreshQueued = true;
             minecraft.execute(() -> {
                 refreshQueued = false;
-                if (minecraft.screen() == this) rebuildPackButtons();
+                if (!closed) rebuildPackButtons();
             });
         }
 
