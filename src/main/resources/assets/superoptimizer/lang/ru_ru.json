@@ -90,5 +90,15 @@
   "superoptimizer.desc.directional": "Отбрасывает только сущности, которые находятся явно за камерой. Проверка не отключает AI/tick и работает только на этапе render submission.",
   "superoptimizer.shaders.toggle": "Шейдеры: %s",
   "superoptimizer.desc.shader_iris": "Открывает настоящий экран выбора шейдеров Iris через публичный Iris API, если установлен совместимый Iris.",
-  "superoptimizer.desc.shader_toggle": "Включает/выключает шейдеры через публичный Iris API. Кнопка становится активной только при обнаружении Iris."
+  "superoptimizer.desc.shader_toggle": "Включает/выключает шейдеры через публичный Iris API. Кнопка становится активной только при обнаружении Iris.",
+  "superoptimizer.gui.graphics_title": "Настройки графики",
+  "superoptimizer.category.quality": "Качество",
+  "superoptimizer.category.performance": "Производительность",
+  "superoptimizer.category.optimizations": "Оптимизации",
+  "superoptimizer.profile.current": "Профиль",
+  "superoptimizer.desc.profile.current": "Переключает профиль оптимизации. Выбор применяется сразу, как в меню Iris.",
+  "superoptimizer.optimizations.culling": "Culling сущностей",
+  "superoptimizer.optimizations.background": "Фоновые задачи",
+  "superoptimizer.optimizations.workers": "CPU-потоки",
+  "superoptimizer.optimizations.reserved": "Резерв CPU-ядер"
 }
