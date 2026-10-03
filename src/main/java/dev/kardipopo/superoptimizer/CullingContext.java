@@ -62,8 +62,11 @@ public final class CullingContext {
 
         if (!active) return;
 
-        var camera = net.minecraft.client.Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-        if (config.pauseDuringCameraMotion && haveCamera) {
+        var cameraEntity = net.minecraft.client.Minecraft.getInstance().getCameraEntity();
+        if (cameraEntity == null) {
+            haveCamera = false;
+        } else {
+        if (cameraEntity != null && config.pauseDuringCameraMotion && haveCamera) {
             double dx = camera.x - lastCamX;
             double dy = camera.y - lastCamY;
             double dz = camera.z - lastCamZ;
@@ -71,10 +74,12 @@ public final class CullingContext {
                 active = false;
             }
         }
-        lastCamX = camera.x;
-        lastCamY = camera.y;
-        lastCamZ = camera.z;
-        haveCamera = true;
+        if (cameraEntity != null) {
+            lastCamX = cameraEntity.getX();
+            lastCamY = cameraEntity.getY();
+            lastCamZ = cameraEntity.getZ();
+            haveCamera = true;
+        }
 
         if (!active) {
             if (lastActive) SuperOptimizerLog.info("Culling временно приостановлен: камера движется.");
