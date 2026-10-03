@@ -13,16 +13,21 @@ public final class IrisBridge {
         return FabricLoader.getInstance().isModLoaded("iris");
     }
 
+    private static Object api() throws ReflectiveOperationException {
+        Class<?> apiClass = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
+        Method getInstance = apiClass.getMethod("getInstance");
+        return getInstance.invoke(null);
+    }
+
     public static boolean openMainScreen(Screen parent) {
         if (!isLoaded()) return false;
 
         try {
             Class<?> apiClass = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
-            Method getInstance = apiClass.getMethod("getInstance");
-            Object api = getInstance.invoke(null);
+            Object api = api();
 
-            Method open = apiClass.getMethod("openMainIrisScreenObj", Object.class);
-            Object screen = open.invoke(api, parent);
+            Object screen = apiClass.getMethod("openMainIrisScreenObj", Object.class)
+                .invoke(api, parent);
 
             if (screen instanceof Screen irisScreen) {
                 Minecraft.getInstance().setScreenAndShow(irisScreen);
@@ -38,12 +43,41 @@ public final class IrisBridge {
         return false;
     }
 
+    public static boolean shadersEnabled() {
+        if (!isLoaded()) return false;
+
+        try {
+            Class<?> apiClass = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
+            Object api = api();
+            Object cfg = apiClass.getMethod("getConfig").invoke(api);
+            return (boolean) cfg.getClass().getMethod("areShadersEnabled").invoke(cfg);
+        } catch (ReflectiveOperationException | LinkageError e) {
+            return false;
+        }
+    }
+
+    public static boolean setShadersEnabled(boolean enabled) {
+        if (!isLoaded()) return false;
+
+        try {
+            Class<?> apiClass = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
+            Object api = api();
+            Object cfg = apiClass.getMethod("getConfig").invoke(api);
+            cfg.getClass().getMethod("setShadersEnabledAndApply", boolean.class).invoke(cfg, enabled);
+            SuperOptimizerLog.info("Iris: шейдеры " + (enabled ? "включены" : "выключены") + ".");
+            return true;
+        } catch (ReflectiveOperationException | LinkageError e) {
+            SuperOptimizerLog.warn("Не удалось изменить состояние Iris: " + e);
+            return false;
+        }
+    }
+
     public static boolean shadersInUse() {
         if (!isLoaded()) return false;
 
         try {
             Class<?> apiClass = Class.forName("net.irisshaders.iris.api.v0.IrisApi");
-            Object api = apiClass.getMethod("getInstance").invoke(null);
+            Object api = api();
             return (boolean) apiClass.getMethod("isShaderPackInUse").invoke(api);
         } catch (ReflectiveOperationException | LinkageError e) {
             return false;
