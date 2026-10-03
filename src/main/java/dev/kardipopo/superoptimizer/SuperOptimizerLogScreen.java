@@ -1,6 +1,5 @@
 package dev.kardipopo.superoptimizer;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -22,26 +21,37 @@ public final class SuperOptimizerLogScreen extends Screen {
 
     @Override
     protected void init() {
-        int y = this.height - 28;
-        addRenderableWidget(Button.builder(Component.translatable("superoptimizer.logs.clear"), b -> {
-            SuperOptimizerLog.clear();
-        }).bounds(8, y, 100, 20).build());
+        int gap = 6;
+        int side = Math.max(70, (this.width - gap * 4) / 3);
+        int y1 = this.height - 52;
+        int y2 = this.height - 28;
 
-        addRenderableWidget(Button.builder(Component.translatable("superoptimizer.logs.open_file"), b -> openLogFile())
-            .bounds(114, y, 130, 20).build());
+        addRenderableWidget(Button.builder(Component.translatable("superoptimizer.logs.clear"),
+            b -> SuperOptimizerLog.clear())
+            .bounds(gap, y1, side, 20).build());
 
-        addRenderableWidget(Button.builder(Component.translatable("superoptimizer.logs.refresh"), b -> {
-            scroll = 0;
-        }).bounds(this.width - 110, y, 100, 20).build());
+        addRenderableWidget(Button.builder(Component.translatable("superoptimizer.logs.open_file"),
+            b -> openLogFile())
+            .bounds(gap + side + gap, y1, side, 20).build());
 
-        addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> minecraft.gui.setScreen(parent))
-            .bounds(this.width / 2 - 80, y, 160, 20).build());
+        addRenderableWidget(Button.builder(Component.translatable("superoptimizer.logs.refresh"),
+            b -> scroll = 0)
+            .bounds(gap + (side + gap) * 2, y1, side, 20).build());
+
+        int doneW = Math.min(180, Math.max(90, this.width - 16));
+        addRenderableWidget(Button.builder(Component.translatable("gui.done"),
+            b -> close())
+            .bounds(this.width / 2 - doneW / 2, y2, doneW, 20).build());
     }
 
     private void openLogFile() {
         Path path = minecraft.gameDirectory.toPath().resolve("config").resolve("superoptimizer.log");
         try {
-            if (Desktop.isDesktopSupported()) Desktop.getDesktop().open(path.toFile());
+            if (Desktop.isDesktopSupported()) {
+                Desktop.getDesktop().open(path.toFile());
+            } else {
+                SuperOptimizerLog.info("Открытие внешнего файла недоступно на этой системе.");
+            }
         } catch (Exception e) {
             SuperOptimizerLog.warn("Не удалось открыть файл логов: " + e.getMessage());
         }
@@ -49,7 +59,7 @@ public final class SuperOptimizerLogScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        if (mouseY >= 36 && mouseY <= this.height - 34) {
+        if (mouseY >= 36 && mouseY <= this.height - 58) {
             int lines = SuperOptimizerLog.snapshot().size();
             maxScroll = Math.max(0, lines * 11 - (this.height - 78));
             scroll = Math.max(0, Math.min(maxScroll, scroll - verticalAmount * 24));
@@ -67,7 +77,7 @@ public final class SuperOptimizerLogScreen extends Screen {
             10, 24, 0xFF9FA8B5, false);
 
         int top = 38;
-        int bottom = this.height - 34;
+        int bottom = this.height - 58;
         graphics.enableScissor(0, top, this.width, bottom);
 
         List<String> lines = SuperOptimizerLog.snapshot();
@@ -80,5 +90,24 @@ public final class SuperOptimizerLogScreen extends Screen {
         }
 
         graphics.disableScissor();
+
+        if (maxScroll > 0) {
+            int trackTop = top;
+            int trackBottom = bottom;
+            int track = trackBottom - trackTop;
+            int thumb = Math.max(18, (int) (track * track / (double) (track + maxScroll)));
+            int thumbY = trackTop + (int) ((track - thumb) * (scroll / maxScroll));
+            graphics.fill(this.width - 7, trackTop, this.width - 4, trackBottom, 0x551A1F26);
+            graphics.fill(this.width - 7, thumbY, this.width - 4, thumbY + thumb, 0xFF4CB9FF);
+        }
+    }
+
+    @Override
+    public void onClose() {
+        close();
+    }
+
+    private void close() {
+        minecraft.setScreenAndShow(parent);
     }
 }
