@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public final class SuperOptimizerClient implements ClientModInitializer {
     public static final String MOD_ID = "superoptimizer";
-    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(MOD_ID);
+    public static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(MOD_ID);
 
     private static SuperOptimizerConfig config;
     private static ExecutorService executor;
