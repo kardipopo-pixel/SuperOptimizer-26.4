@@ -26,37 +26,40 @@ jobs:
           gradle-version: '9.7.1'
       - name: Build with real Fabric/Minecraft dependencies
         run: gradle --no-daemon clean build
-      - name: Inspect 26.4 rendering classes
+      - name: Inspect 26.4 rendering API
         shell: bash
         run: |
-          set -e
-          echo "== Candidate Minecraft client jars =="
-          find "$HOME/.gradle/caches" -type f -name '*.jar' | grep -E '26\.4|minecraft' | head -80 || true
+          set -euo pipefail
+          JAR="$(python - <<'PY'
+import os
+import zipfile
 
-          JAR="$(find "$HOME/.gradle/caches" -type f -name '*.jar' | while read -r f; do
-            if jar tf "$f" 2>/dev/null | grep -q '^net/minecraft/client/renderer/entity/EntityRenderDispatcher.class
-        uses: actions/upload-artifact@v4
-        with:
-          name: SuperOptimizer-26.4-alpha.2
-          path: build/libs/*.jar
-          if-no-files-found: error
-          retention-days: 14
-; then
-              echo "$f"
-              break
-            fi
-          done)"
-          if [ -z "$JAR" ]; then
-            echo "EntityRenderDispatcher jar not found"
-            exit 1
-          fi
-          echo "Using: $JAR"
+root = os.path.expanduser("~/.gradle/caches")
+needle = "net/minecraft/client/renderer/entity/EntityRenderDispatcher.class"
+
+for base, _, files in os.walk(root):
+    for name in files:
+        if not name.endswith(".jar"):
+            continue
+        path = os.path.join(base, name)
+        try:
+            with zipfile.ZipFile(path) as z:
+                if needle in z.namelist():
+                    print(path)
+                    raise SystemExit(0)
+        except (OSError, zipfile.BadZipFile):
+            pass
+
+raise SystemExit("Minecraft client jar not found")
+PY
+          )"
+          echo "Minecraft client jar: $JAR"
           echo "== EntityRenderDispatcher =="
-          javap -classpath "$JAR" -p net.minecraft.client.renderer.entity.EntityRenderDispatcher | sed -n '1,220p'
+          javap -classpath "$JAR" -p net.minecraft.client.renderer.entity.EntityRenderDispatcher
           echo "== LevelRenderer =="
-          javap -classpath "$JAR" -p net.minecraft.client.renderer.LevelRenderer | sed -n '1,260p'
-          echo "== WorldRenderState =="
-          javap -classpath "$JAR" -p net.minecraft.client.renderer.state.level.LevelRenderState | sed -n '1,180p'
+          javap -classpath "$JAR" -p net.minecraft.client.renderer.LevelRenderer
+          echo "== LevelRenderState =="
+          javap -classpath "$JAR" -p net.minecraft.client.renderer.state.level.LevelRenderState
       - name: Upload mod JAR
         uses: actions/upload-artifact@v4
         with:
