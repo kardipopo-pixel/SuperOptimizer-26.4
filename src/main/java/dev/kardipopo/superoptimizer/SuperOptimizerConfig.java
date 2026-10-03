@@ -9,16 +9,16 @@ import java.util.Properties;
 
 public final class SuperOptimizerConfig {
     public boolean enabled = true;
-    public boolean asyncPreparation = true;
     public boolean entityCulling = true;
     public boolean blockEntityCulling = false;
+    public boolean pauseDuringCameraMotion = true;
     public boolean disableCullingWithIris = true;
     public boolean disableCullingWithEntityCullingMod = true;
+    public boolean diagnostics = true;
+    public boolean fileLogging = true;
+    public boolean shaderScanAsync = true;
     public int workerThreads = Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() / 2));
     public int reservedCores = Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
-    public int scanIntervalTicks = 4;
-    public boolean pauseDuringCameraMotion = true;
-    public boolean diagnostics = true;
 
     public static SuperOptimizerConfig load(Path dir) {
         SuperOptimizerConfig c = new SuperOptimizerConfig();
@@ -29,14 +29,16 @@ public final class SuperOptimizerConfig {
         try (Reader r = Files.newBufferedReader(file)) {
             p.load(r);
             c.enabled = bool(p, "enabled", c.enabled);
-            c.asyncPreparation = bool(p, "asyncPreparation", c.asyncPreparation);
             c.entityCulling = bool(p, "entityCulling", c.entityCulling);
             c.blockEntityCulling = bool(p, "blockEntityCulling", c.blockEntityCulling);
+            c.pauseDuringCameraMotion = bool(p, "pauseDuringCameraMotion", c.pauseDuringCameraMotion);
+            c.disableCullingWithIris = bool(p, "disableCullingWithIris", c.disableCullingWithIris);
+            c.disableCullingWithEntityCullingMod = bool(p, "disableCullingWithEntityCullingMod", c.disableCullingWithEntityCullingMod);
+            c.diagnostics = bool(p, "diagnostics", c.diagnostics);
+            c.fileLogging = bool(p, "fileLogging", c.fileLogging);
+            c.shaderScanAsync = bool(p, "shaderScanAsync", c.shaderScanAsync);
             c.workerThreads = clamp(integer(p, "workerThreads", c.workerThreads), 1, 32);
             c.reservedCores = clamp(integer(p, "reservedCores", c.reservedCores), 0, 64);
-            c.scanIntervalTicks = clamp(integer(p, "scanIntervalTicks", c.scanIntervalTicks), 1, 40);
-            c.pauseDuringCameraMotion = bool(p, "pauseDuringCameraMotion", c.pauseDuringCameraMotion);
-            c.diagnostics = bool(p, "diagnostics", c.diagnostics);
         } catch (IOException e) {
             SuperOptimizerClient.LOGGER.warn("Не удалось прочитать конфиг SuperOptimizer", e);
         }
@@ -48,14 +50,16 @@ public final class SuperOptimizerConfig {
             Files.createDirectories(dir);
             Properties p = new Properties();
             p.setProperty("enabled", Boolean.toString(enabled));
-            p.setProperty("asyncPreparation", Boolean.toString(asyncPreparation));
             p.setProperty("entityCulling", Boolean.toString(entityCulling));
             p.setProperty("blockEntityCulling", Boolean.toString(blockEntityCulling));
+            p.setProperty("pauseDuringCameraMotion", Boolean.toString(pauseDuringCameraMotion));
+            p.setProperty("disableCullingWithIris", Boolean.toString(disableCullingWithIris));
+            p.setProperty("disableCullingWithEntityCullingMod", Boolean.toString(disableCullingWithEntityCullingMod));
+            p.setProperty("diagnostics", Boolean.toString(diagnostics));
+            p.setProperty("fileLogging", Boolean.toString(fileLogging));
+            p.setProperty("shaderScanAsync", Boolean.toString(shaderScanAsync));
             p.setProperty("workerThreads", Integer.toString(workerThreads));
             p.setProperty("reservedCores", Integer.toString(reservedCores));
-            p.setProperty("scanIntervalTicks", Integer.toString(scanIntervalTicks));
-            p.setProperty("pauseDuringCameraMotion", Boolean.toString(pauseDuringCameraMotion));
-            p.setProperty("diagnostics", Boolean.toString(diagnostics));
 
             Path file = dir.resolve("superoptimizer.properties");
             try (Writer w = Files.newBufferedWriter(file)) {
