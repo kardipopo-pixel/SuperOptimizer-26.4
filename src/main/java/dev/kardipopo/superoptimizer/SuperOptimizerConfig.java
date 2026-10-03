@@ -127,7 +127,7 @@ public final class SuperOptimizerConfig {
     public boolean fileLogging = true;
 
     // Runtime profile metadata
-    public String activePreset = "BALANCED";
+    public String activePreset = "AUTO";
 
     public static SuperOptimizerConfig load(Path dir) {
         SuperOptimizerConfig c = new SuperOptimizerConfig();
