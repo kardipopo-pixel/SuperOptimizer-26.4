@@ -8,6 +8,8 @@
   },
   "client": [
     "LevelRendererEntityCullingMixin",
-    "LevelRendererBlockEntityCullingMixin"
+    "LevelRendererBlockEntityCullingMixin",
+    "GameRendererProfilerMixin",
+    "ParticleEngineOptimizerMixin"
   ]
 }

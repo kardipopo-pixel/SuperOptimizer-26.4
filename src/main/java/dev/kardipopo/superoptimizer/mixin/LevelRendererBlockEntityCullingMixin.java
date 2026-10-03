@@ -2,6 +2,7 @@ package dev.kardipopo.superoptimizer.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.kardipopo.superoptimizer.CullingContext;
+import dev.kardipopo.superoptimizer.SelfHealingManager;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
@@ -47,7 +48,12 @@ public abstract class LevelRendererBlockEntityCullingMixin {
             PoseStack poseStack,
             SubmitNodeCollector collector,
             CameraRenderState cameraRenderState) {
-        if (CullingContext.shouldSubmitBlockEntity(state)) {
+        try {
+            if (CullingContext.shouldSubmitBlockEntity(state)) {
+                dispatcher.submit(state, poseStack, collector, cameraRenderState);
+            }
+        } catch (Throwable t) {
+            SelfHealingManager.reportFailure("block-entity-culling", t);
             dispatcher.submit(state, poseStack, collector, cameraRenderState);
         }
     }

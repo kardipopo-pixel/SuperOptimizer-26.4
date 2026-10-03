@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.state.level.LevelRenderState;
 import dev.kardipopo.superoptimizer.CullingContext;
+import dev.kardipopo.superoptimizer.SelfHealingManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -50,7 +51,12 @@ public abstract class LevelRendererEntityCullingMixin {
             double z,
             PoseStack poseStack,
             SubmitNodeCollector collector) {
-        if (CullingContext.shouldSubmit(state)) {
+        try {
+            if (CullingContext.shouldSubmit(state)) {
+                dispatcher.submit(state, cameraRenderState, x, y, z, poseStack, collector);
+            }
+        } catch (Throwable t) {
+            SelfHealingManager.reportFailure("entity-culling", t);
             dispatcher.submit(state, cameraRenderState, x, y, z, poseStack, collector);
         }
     }
