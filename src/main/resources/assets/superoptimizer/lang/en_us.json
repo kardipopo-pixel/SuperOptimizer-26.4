@@ -1,0 +1,12 @@
+{
+  "superoptimizer.gui.title": "SuperOptimizer",
+  "superoptimizer.gui.subtitle": "Safe performance settings for 26.4",
+  "key.superoptimizer.open_settings": "Open SuperOptimizer settings",
+  "superoptimizer.option.enabled": "Optimizer: %s",
+  "superoptimizer.option.async": "Async preparation: %s",
+  "superoptimizer.option.entity": "Entity culling: %s",
+  "superoptimizer.option.block_entity": "Block entity culling: %s",
+  "superoptimizer.option.workers": "SuperOptimizer threads: %s",
+  "superoptimizer.option.reserved": "Reserved CPU cores: %s",
+  "superoptimizer.option.pause_motion": "Pause while camera moves: %s"
+}
