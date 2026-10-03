@@ -37,12 +37,6 @@ public final class AdaptivePerformanceController {
 
         Minecraft mc = Minecraft.getInstance();
 
-        // Unfocused rendering is handled by the modern FramerateLimitTracker when possible.
-        // We only provide a safe renderer-thread sleep fallback here.
-        if (c.adaptiveUnfocusedFpsCap && !mc.isWindowActive()) {
-            throttleUnfocused(c.unfocusedFps);
-        }
-
         if (!c.frameTimeStabilizer && !c.particleAdaptive && !c.entityLod) return;
 
         double frameMs = PerformanceProfiler.lastFrameMs();
@@ -101,6 +95,24 @@ public final class AdaptivePerformanceController {
         SuperOptimizerLog.info("Adaptive Performance: qualityScale="
                 + String.format(java.util.Locale.ROOT, "%.2f", qualityScale)
                 + " (step " + step + "%, " + (delta < 0 ? "снижение" : "восстановление") + ")");
+    }
+
+    public static void onFrameBoundary() {
+        SuperOptimizerConfig c = SuperOptimizerClient.config();
+        if (c == null || !c.enabled || !c.adaptiveUnfocusedFpsCap) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.isWindowActive()) return;
+
+        int safeFps = Math.max(5, Math.min(30, c.unfocusedFps));
+        long minFrameNs = 1_000_000_000L / safeFps;
+        long frameNs = PerformanceProfiler.lastFrameNs();
+        long remaining = minFrameNs - frameNs;
+        if (remaining <= 0) return;
+        try {
+            Thread.sleep(remaining / 1_000_000L, (int) (remaining % 1_000_000L));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private static void throttleUnfocused(int fps) {
