@@ -376,6 +376,12 @@ public final class SuperOptimizerScreen extends Screen {
         y = header(y, "superoptimizer.category.hardware", "superoptimizer.page.hardware.desc");
         y = toggle(y, "superoptimizer.option.hardware_profiles", "superoptimizer.desc.hardware_profiles",
                 () -> config.hardwareAwareProfiles, v -> { config.hardwareAwareProfiles = v; markCustom(); }, Impact.BEST);
+        y = action(y, "superoptimizer.action.auto_profile", "superoptimizer.desc.auto_profile",
+                q -> {
+                    SuperOptimizerClient.Preset preset = HardwareAwareProfiles.choose();
+                    SuperOptimizerClient.applyPreset(preset);
+                    config.activePreset = preset.name();
+                }, Impact.BEST);
         y = toggle(y, "superoptimizer.option.gpu_state_optimizer", "superoptimizer.desc.gpu_state_optimizer",
                 () -> config.gpuStateOptimizer, v -> { config.gpuStateOptimizer = v; markCustom(); }, Impact.MEDIUM);
         y = status(y, "superoptimizer.hardware.cpu", PerformanceProfiler.currentCpu() < 0 ? "UNKNOWN" : format("%.0f%%", PerformanceProfiler.currentCpu()), Impact.MEDIUM);
