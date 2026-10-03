@@ -12,343 +12,522 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
+import java.util.function.Supplier;
 
+/**
+ * Graphics settings screen inspired by Sodium's compact list layout:
+ * fixed left navigation, narrow centered settings column, no screen overflow.
+ */
 public final class SuperOptimizerScreen extends Screen {
     private enum Category {
         GENERAL("superoptimizer.category.general"),
-        PROFILES("superoptimizer.category.profiles"),
+        QUALITY("superoptimizer.category.quality"),
+        PERFORMANCE("superoptimizer.category.performance"),
+        OPTIMIZATIONS("superoptimizer.category.optimizations"),
         CULLING("superoptimizer.category.culling"),
         CPU("superoptimizer.category.cpu"),
         COMPATIBILITY("superoptimizer.category.compatibility"),
+        SHADERS("superoptimizer.shaders.title"),
         DIAGNOSTICS("superoptimizer.category.diagnostics");
 
         final String key;
-
-        Category(String key) {
-            this.key = key;
-        }
+        Category(String key) { this.key = key; }
     }
 
-    private record Entry(Button button, int baseY) {}
+    private enum Kind { TOGGLE, VALUE, ACTION, STATUS, PROFILE }
+
+    private record Row(Button hitbox, String key, String desc, Supplier<Component> value, int y, Kind kind) {}
+    private record NavButton(Category category, Button hitbox, int y) {}
 
     private final Screen parent;
     private final SuperOptimizerConfig config;
     private final Category category;
 
-    private final List<Button> pageWidgets = new ArrayList<>();
-    private final List<Entry> scrollEntries = new ArrayList<>();
+    private final List<Row> rows = new ArrayList<>();
+    private final List<NavButton> nav = new ArrayList<>();
 
-    private double scroll;
-    private double maxScroll;
+    private int navX, navW, mainX, mainW;
+    private int contentTop, contentBottom, pageBottom;
+    private double scroll, maxScroll;
+    private SuperOptimizerClient.Preset activePreset;
 
     public SuperOptimizerScreen(Screen parent, SuperOptimizerConfig config) {
         this(parent, config, Category.GENERAL);
     }
 
     public SuperOptimizerScreen(Screen parent, SuperOptimizerConfig config, Category category) {
-        super(Component.translatable("superoptimizer.gui.title"));
+        super(Component.translatable("superoptimizer.gui.graphics_title"));
         this.parent = parent;
         this.config = config;
         this.category = category;
+        this.activePreset = detectPreset();
     }
 
     @Override
     protected void init() {
-        clearLists();
+        rows.clear();
+        nav.clear();
+        scroll = 0;
 
-        int sidebarX = 8;
-        int sidebarW = Math.max(105, Math.min(138, this.width / 4));
-        int contentLeft = sidebarX + sidebarW + 8;
-        int contentRight = this.width - 8;
-        int contentW = Math.max(180, contentRight - contentLeft);
-        int contentCenter = contentLeft + contentW / 2;
+        int margin = 16;
+        int gap = 14;
 
-        addSidebarButtons(sidebarX, sidebarW);
-        addRenderableWidget(Button.builder(Component.translatable("superoptimizer.button.shaders"),
-            b -> minecraft.setScreenAndShow(new ShaderPackScreen(this, config)))
-            .bounds(contentLeft, this.height - 54, Math.min(190, contentW), 20)
-            .build());
+        navX = margin;
+        navW = Math.min(250, Math.max(190, this.width / 4));
 
-        addRenderableWidget(Button.builder(Component.translatable("superoptimizer.button.logs"),
-            b -> minecraft.setScreenAndShow(new SuperOptimizerLogScreen(this)))
-            .bounds(contentLeft, this.height - 30, Math.min(190, contentW), 20)
-            .build());
+        mainX = navX + navW + gap;
+        mainW = Math.min(560, this.width - mainX - margin);
 
-        addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> close())
-            .bounds(Math.max(contentRight - 160, contentLeft), this.height - 30, 160, 20)
-            .build());
-
-        int y = 48;
-        switch (category) {
-            case GENERAL -> y = buildGeneral(contentCenter, contentW, y);
-            case PROFILES -> y = buildProfiles(contentCenter, contentW, y);
-            case CULLING -> y = buildCulling(contentCenter, contentW, y);
-            case CPU -> y = buildCpu(contentCenter, contentW, y);
-            case COMPATIBILITY -> y = buildCompatibility(contentCenter, contentW, y);
-            case DIAGNOSTICS -> y = buildDiagnostics(contentCenter, contentW, y);
+        if (mainW < 330) {
+            navW = Math.max(170, this.width / 3);
+            mainX = navX + navW + gap;
+            mainW = this.width - mainX - margin;
         }
 
-        maxScroll = Math.max(0, y - (this.height - 62));
+        mainW = Math.max(260, mainW);
+
+        contentTop = 92;
+        contentBottom = this.height - 48;
+
+        buildNavigation();
+        buildPage();
+
+        maxScroll = Math.max(0, pageBottom - contentBottom + 8);
         applyScroll();
     }
 
-    private void clearLists() {
-        pageWidgets.clear();
-        scrollEntries.clear();
-        scroll = 0;
-        maxScroll = 0;
-    }
+    private void buildNavigation() {
+        int y = 54;
 
-    private void addSidebarButtons(int x, int width) {
-        int y = 34;
+        // Mod header, similar to the left column in the reference.
         for (Category c : Category.values()) {
-            Button b = Button.builder(Component.translatable(c.key), button ->
-                minecraft.setScreenAndShow(new SuperOptimizerScreen(parent, config, c)))
-                .bounds(x, y, width, 20)
-                .build();
-            addRenderableWidget(b);
-            pageWidgets.add(b);
-            y += 23;
+            Button b = hitbox(Component.translatable(c.key),
+                    q -> minecraft.setScreenAndShow(new SuperOptimizerScreen(parent, config, c)),
+                    navX, y, navW, 34);
+            nav.add(new NavButton(c, b, y));
+            y += 36;
         }
     }
 
-    private int buildGeneral(int center, int width, int y) {
-        y = toggle("superoptimizer.option.enabled", "superoptimizer.desc.enabled", config.enabled,
-            v -> { config.enabled = v; SuperOptimizerClient.applyConfig(); }, center, width, y);
+    private void buildPage() {
+        int y = contentTop + 38;
 
-        y = toggle("superoptimizer.option.background", "superoptimizer.desc.background",
-            config.backgroundTasks, v -> { config.backgroundTasks = v; SuperOptimizerClient.applyConfig(); }, center, width, y);
+        switch (category) {
+            case GENERAL -> {
+                y = header(y, "superoptimizer.category.general", "superoptimizer.desc.enabled");
+                y = profile(y);
+                y = toggle(y, "superoptimizer.option.enabled", "superoptimizer.desc.enabled",
+                        () -> config.enabled, v -> {
+                            config.enabled = v;
+                            SuperOptimizerClient.applyConfig();
+                        });
+                y = toggle(y, "superoptimizer.option.background", "superoptimizer.desc.background",
+                        () -> config.backgroundTasks, v -> {
+                            config.backgroundTasks = v;
+                            SuperOptimizerClient.applyConfig();
+                        });
+            }
+            case QUALITY -> {
+                y = header(y, "superoptimizer.category.quality", "superoptimizer.desc.pause_motion");
+                y = toggle(y, "superoptimizer.option.pause_motion", "superoptimizer.desc.pause_motion",
+                        () -> config.pauseDuringCameraMotion, v -> config.pauseDuringCameraMotion = v);
+                y = toggle(y, "superoptimizer.option.skip_near", "superoptimizer.desc.skip_near",
+                        () -> config.skipNearEntityCulling, v -> config.skipNearEntityCulling = v);
+                y = cycle(y, "superoptimizer.option.near_distance", "superoptimizer.desc.near_distance",
+                        () -> config.nearEntityDistance, 0, 64, 4, v -> config.nearEntityDistance = v);
+            }
+            case PERFORMANCE -> {
+                y = header(y, "superoptimizer.category.performance", "superoptimizer.desc.directional");
+                y = toggle(y, "superoptimizer.option.entity", "superoptimizer.desc.entity",
+                        () -> config.entityCulling, v -> config.entityCulling = v);
+                y = toggle(y, "superoptimizer.option.block_entity", "superoptimizer.desc.block_entity",
+                        () -> config.blockEntityCulling, v -> config.blockEntityCulling = v);
+                y = toggle(y, "superoptimizer.option.directional", "superoptimizer.desc.directional",
+                        () -> config.directionalEntityCulling, v -> config.directionalEntityCulling = v);
+            }
+            case OPTIMIZATIONS -> {
+                y = header(y, "superoptimizer.category.optimizations", "superoptimizer.desc.background");
+                y = status(y, "superoptimizer.optimizations.culling",
+                        () -> Component.literal(config.entityCulling ? "активен" : "отключен"));
+                y = status(y, "superoptimizer.optimizations.background",
+                        () -> Component.literal(config.backgroundTasks ? "активны" : "отключены"));
+                y = status(y, "superoptimizer.optimizations.workers",
+                        () -> Component.literal(Integer.toString(config.workerThreads)));
+                y = status(y, "superoptimizer.optimizations.reserved",
+                        () -> Component.literal(Integer.toString(config.reservedCores)));
+            }
+            case CULLING -> {
+                y = header(y, "superoptimizer.category.culling", "superoptimizer.desc.entity");
+                y = toggle(y, "superoptimizer.option.entity", "superoptimizer.desc.entity",
+                        () -> config.entityCulling, v -> config.entityCulling = v);
+                y = toggle(y, "superoptimizer.option.block_entity", "superoptimizer.desc.block_entity",
+                        () -> config.blockEntityCulling, v -> config.blockEntityCulling = v);
+                y = toggle(y, "superoptimizer.option.directional", "superoptimizer.desc.directional",
+                        () -> config.directionalEntityCulling, v -> config.directionalEntityCulling = v);
+                y = toggle(y, "superoptimizer.option.skip_near", "superoptimizer.desc.skip_near",
+                        () -> config.skipNearEntityCulling, v -> config.skipNearEntityCulling = v);
+                y = cycle(y, "superoptimizer.option.near_distance", "superoptimizer.desc.near_distance",
+                        () -> config.nearEntityDistance, 0, 64, 4, v -> config.nearEntityDistance = v);
+            }
+            case CPU -> {
+                y = header(y, "superoptimizer.category.cpu", "superoptimizer.desc.workers");
+                y = toggle(y, "superoptimizer.option.background", "superoptimizer.desc.background",
+                        () -> config.backgroundTasks, v -> {
+                            config.backgroundTasks = v;
+                            SuperOptimizerClient.applyConfig();
+                        });
+                y = cycle(y, "superoptimizer.option.workers", "superoptimizer.desc.workers",
+                        () -> config.workerThreads, 1,
+                        Math.max(1, Math.min(16, Runtime.getRuntime().availableProcessors())),
+                        1, v -> {
+                            config.workerThreads = v;
+                            SuperOptimizerClient.applyConfig();
+                        });
+                y = cycle(y, "superoptimizer.option.reserved", "superoptimizer.desc.reserved",
+                        () -> config.reservedCores, 0,
+                        Math.min(8, Math.max(0, Runtime.getRuntime().availableProcessors() - 1)),
+                        1, v -> {
+                            config.reservedCores = v;
+                            SuperOptimizerClient.applyConfig();
+                        });
+                y = toggle(y, "superoptimizer.option.shader_scan_async", "superoptimizer.desc.shader_scan_async",
+                        () -> config.shaderScanAsync, v -> {
+                            config.shaderScanAsync = v;
+                            SuperOptimizerClient.applyConfig();
+                        });
+            }
+            case COMPATIBILITY -> {
+                y = header(y, "superoptimizer.category.compatibility", "superoptimizer.desc.iris_lock");
+                y = toggle(y, "superoptimizer.option.iris_lock", "superoptimizer.desc.iris_lock",
+                        () -> config.disableCullingWithIris, v -> config.disableCullingWithIris = v);
+                y = toggle(y, "superoptimizer.option.entity_culling_lock", "superoptimizer.desc.entity_culling_lock",
+                        () -> config.disableCullingWithEntityCullingMod, v -> config.disableCullingWithEntityCullingMod = v);
+                y = status(y, "superoptimizer.compat.iris", () -> Component.literal(
+                        net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("iris")
+                                ? "обнаружен" : "не установлен"));
+                y = status(y, "superoptimizer.compat.entity_culling", () -> Component.literal(
+                        net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("entityculling")
+                                ? "обнаружен" : "не установлен"));
+            }
+            case SHADERS -> {
+                y = header(y, "superoptimizer.shaders.title", "superoptimizer.desc.shader_iris");
+                y = toggle(y, "superoptimizer.option.shader_scan_async", "superoptimizer.desc.shader_scan_async",
+                        () -> config.shaderScanAsync, v -> {
+                            config.shaderScanAsync = v;
+                            SuperOptimizerClient.applyConfig();
+                        });
+                y = status(y, "superoptimizer.shaders.iris_detected", () -> Component.literal(
+                        net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("iris")
+                                ? "Iris обнаружен" : "Iris не найден"));
+                y = action(y, "superoptimizer.button.shaders", "superoptimizer.desc.shader_iris",
+                        q -> minecraft.setScreenAndShow(new ShaderPackScreen(this, config)));
+            }
+            case DIAGNOSTICS -> {
+                y = header(y, "superoptimizer.category.diagnostics", "superoptimizer.desc.diagnostics");
+                y = toggle(y, "superoptimizer.option.diagnostics", "superoptimizer.desc.diagnostics",
+                        () -> config.diagnostics, v -> config.diagnostics = v);
+                y = toggle(y, "superoptimizer.option.file_logging", "superoptimizer.desc.file_logging",
+                        () -> config.fileLogging, v -> config.fileLogging = v);
+                y = status(y, "superoptimizer.diag.entity",
+                        () -> Component.literal(CullingContext.entityCulled() + " / " + CullingContext.entityChecks()));
+                y = status(y, "superoptimizer.diag.block_entity",
+                        () -> Component.literal(CullingContext.blockEntityCulled() + " / " + CullingContext.blockEntityChecks()));
+                y = action(y, "superoptimizer.action.clear_logs", "superoptimizer.desc.clear_logs",
+                        q -> SuperOptimizerLog.clear());
+                y = action(y, "superoptimizer.action.reset_stats", "superoptimizer.desc.reset_stats",
+                        q -> CullingContext.resetStats());
+            }
+        }
 
-        y = toggle("superoptimizer.option.entity", "superoptimizer.desc.entity",
-            config.entityCulling, v -> config.entityCulling = v, center, width, y);
-
-        y = toggle("superoptimizer.option.block_entity", "superoptimizer.desc.block_entity",
-            config.blockEntityCulling, v -> config.blockEntityCulling = v, center, width, y);
-
-        y = toggle("superoptimizer.option.pause_motion", "superoptimizer.desc.pause_motion",
-            config.pauseDuringCameraMotion, v -> config.pauseDuringCameraMotion = v, center, width, y);
-
-        y = toggle("superoptimizer.option.skip_near", "superoptimizer.desc.skip_near",
-            config.skipNearEntityCulling, v -> config.skipNearEntityCulling = v, center, width, y);
-
-        y = cycle("superoptimizer.option.near_distance", "superoptimizer.desc.near_distance",
-            config.nearEntityDistance, 0, 64, 4, v -> config.nearEntityDistance = v, center, width, y);
-
-        y = toggle("superoptimizer.option.directional", "superoptimizer.desc.directional",
-            config.directionalEntityCulling, v -> config.directionalEntityCulling = v, center, width, y);
-
-        return y;
+        pageBottom = y + 12;
     }
 
-    private int buildProfiles(int center, int width, int y) {
-        y = preset("superoptimizer.preset.microwave", "superoptimizer.desc.preset.microwave",
-            SuperOptimizerClient.Preset.MICROWAVE, center, width, y);
-        y = preset("superoptimizer.preset.light", "superoptimizer.desc.preset.light",
-            SuperOptimizerClient.Preset.LIGHT, center, width, y);
-        y = preset("superoptimizer.preset.balanced", "superoptimizer.desc.preset.balanced",
-            SuperOptimizerClient.Preset.BALANCED, center, width, y);
-        y = preset("superoptimizer.preset.advanced", "superoptimizer.desc.preset.advanced",
-            SuperOptimizerClient.Preset.ADVANCED, center, width, y);
-
-        addStatus("superoptimizer.profile.note", center, y);
-        return y + 28;
+    private int header(int y, String title, String subtitle) {
+        return y + 2;
     }
 
-    private int buildCulling(int center, int width, int y) {
-        y = toggle("superoptimizer.option.entity", "superoptimizer.desc.entity",
-            config.entityCulling, v -> config.entityCulling = v, center, width, y);
-        y = toggle("superoptimizer.option.block_entity", "superoptimizer.desc.block_entity",
-            config.blockEntityCulling, v -> config.blockEntityCulling = v, center, width, y);
-        y = toggle("superoptimizer.option.pause_motion", "superoptimizer.desc.pause_motion",
-            config.pauseDuringCameraMotion, v -> config.pauseDuringCameraMotion = v, center, width, y);
-        y = toggle("superoptimizer.option.skip_near", "superoptimizer.desc.skip_near",
-            config.skipNearEntityCulling, v -> config.skipNearEntityCulling = v, center, width, y);
-        y = cycle("superoptimizer.option.near_distance", "superoptimizer.desc.near_distance",
-            config.nearEntityDistance, 0, 64, 4, v -> config.nearEntityDistance = v, center, width, y);
-        y = toggle("superoptimizer.option.directional", "superoptimizer.desc.directional",
-            config.directionalEntityCulling, v -> config.directionalEntityCulling = v, center, width, y);
-        return y;
+    private int profile(int y) {
+        int h = 40;
+        Button b = hitbox(Component.literal("Профиль"),
+                q -> cycleProfile(),
+                mainX, y, mainW, h);
+        b.setTooltip(Tooltip.create(Component.literal("Переключить профиль, как в Iris")));
+        b.setTooltipDelay(Duration.ofMillis(250));
+        rows.add(new Row(b, "superoptimizer.profile.current", "superoptimizer.desc.profile.current",
+                () -> profileName(activePreset), y, Kind.PROFILE));
+        return y + h + 4;
     }
 
-    private int buildCpu(int center, int width, int y) {
-        y = toggle("superoptimizer.option.background", "superoptimizer.desc.background",
-            config.backgroundTasks, v -> { config.backgroundTasks = v; SuperOptimizerClient.applyConfig(); }, center, width, y);
-        y = cycle("superoptimizer.option.workers", "superoptimizer.desc.workers",
-            config.workerThreads, 1, Math.max(1, Math.min(16, Runtime.getRuntime().availableProcessors())), 1,
-            v -> { config.workerThreads = v; SuperOptimizerClient.applyConfig(); }, center, width, y);
-        y = cycle("superoptimizer.option.reserved", "superoptimizer.desc.reserved",
-            config.reservedCores, 0, Math.min(8, Math.max(0, Runtime.getRuntime().availableProcessors() - 1)), 1,
-            v -> { config.reservedCores = v; SuperOptimizerClient.applyConfig(); }, center, width, y);
-        y = toggle("superoptimizer.option.shader_scan_async", "superoptimizer.desc.shader_scan_async",
-            config.shaderScanAsync, v -> { config.shaderScanAsync = v; SuperOptimizerClient.applyConfig(); }, center, width, y);
-        return y;
+    private void cycleProfile() {
+        SuperOptimizerClient.Preset next;
+        if (activePreset == null) {
+            next = SuperOptimizerClient.Preset.LIGHT;
+        } else {
+            next = switch (activePreset) {
+                case LIGHT -> SuperOptimizerClient.Preset.BALANCED;
+                case BALANCED -> SuperOptimizerClient.Preset.ADVANCED;
+                case ADVANCED -> SuperOptimizerClient.Preset.MICROWAVE;
+                case MICROWAVE -> SuperOptimizerClient.Preset.LIGHT;
+            };
+        }
+        activePreset = next;
+        SuperOptimizerClient.applyPreset(next);
+        init();
     }
 
-    private int buildCompatibility(int center, int width, int y) {
-        y = toggle("superoptimizer.option.iris_lock", "superoptimizer.desc.iris_lock",
-            config.disableCullingWithIris, v -> config.disableCullingWithIris = v, center, width, y);
-        y = toggle("superoptimizer.option.entity_culling_lock", "superoptimizer.desc.entity_culling_lock",
-            config.disableCullingWithEntityCullingMod, v -> config.disableCullingWithEntityCullingMod = v, center, width, y);
-        y = addStatus("superoptimizer.compat.iris", center, y);
-        y = addStatus("superoptimizer.compat.entity_culling", center, y);
-        return y + 8;
+    private int toggle(int y, String key, String desc, Supplier<Boolean> get, Consumer<Boolean> set) {
+        Button b = hitbox(Component.translatable(key), q -> {
+            set.accept(!get.get());
+            activePreset = detectPreset();
+        }, mainX, y, mainW, 36);
+        tooltip(b, desc);
+        rows.add(new Row(b, key, desc, () -> Component.literal(get.get() ? "ВКЛ" : "ВЫКЛ"), y, Kind.TOGGLE));
+        return y + 38;
     }
 
-    private int buildDiagnostics(int center, int width, int y) {
-        y = toggle("superoptimizer.option.diagnostics", "superoptimizer.desc.diagnostics",
-            config.diagnostics, v -> config.diagnostics = v, center, width, y);
-        y = toggle("superoptimizer.option.file_logging", "superoptimizer.desc.file_logging",
-            config.fileLogging, v -> { config.fileLogging = v; SuperOptimizerLog.info("Файловое логирование: " + v); }, center, width, y);
-
-        y = addStatus("superoptimizer.diag.entity", center, y);
-        y = addStatus("superoptimizer.diag.block_entity", center, y);
-
-        addAction("superoptimizer.action.clear_logs", "superoptimizer.desc.clear_logs",
-            b -> SuperOptimizerLog.clear(), center, width, y); y += 42;
-
-        addAction("superoptimizer.action.reset_stats", "superoptimizer.desc.reset_stats",
-            b -> CullingContext.resetStats(), center, width, y); y += 42;
-
-        return y;
+    private int cycle(int y, String key, String desc, Supplier<Integer> get, int min, int max, int step,
+                      IntConsumer set) {
+        Button b = hitbox(Component.translatable(key), q -> {
+            int v = get.get() + step;
+            if (v > max) v = min;
+            set.accept(v);
+            activePreset = detectPreset();
+        }, mainX, y, mainW, 36);
+        tooltip(b, desc);
+        rows.add(new Row(b, key, desc, () -> Component.literal(Integer.toString(get.get())), y, Kind.VALUE));
+        return y + 38;
     }
 
-    private int toggle(String key, String descKey, boolean value, Consumer<Boolean> setter,
-                       int center, int width, int y) {
-        final boolean[] state = {value};
-        Button b = Button.builder(label(key, state[0]), button -> {
-            state[0] = !state[0];
-            setter.accept(state[0]);
-            button.setMessage(label(key, state[0]));
-        }).bounds(center - Math.min(210, width / 2), y, Math.min(420, width), 20).build();
-
-        tooltip(b, descKey);
-        addEntry(b, y);
-        return y + 43;
-    }
-
-    private int cycle(String key, String descKey, int value, int min, int max, int step,
-                      IntConsumer setter, int center, int width, int y) {
-        final int[] state = {value};
-        Button b = Button.builder(Component.translatable(key, state[0]), button -> {
-            state[0] += step;
-            if (state[0] > max) state[0] = min;
-            setter.accept(state[0]);
-            button.setMessage(Component.translatable(key, state[0]));
-        }).bounds(center - Math.min(210, width / 2), y, Math.min(420, width), 20).build();
-
-        tooltip(b, descKey);
-        addEntry(b, y);
-        return y + 43;
-    }
-
-    private int preset(String key, String descKey, SuperOptimizerClient.Preset preset,
-                       int center, int width, int y) {
-        Button b = Button.builder(Component.translatable(key), button -> {
-            SuperOptimizerClient.applyPreset(preset);
-            minecraft.setScreenAndShow(new SuperOptimizerScreen(parent, config, Category.PROFILES));
-        }).bounds(center - Math.min(210, width / 2), y, Math.min(420, width), 20).build();
-
-        tooltip(b, descKey);
-        addEntry(b, y);
-        return y + 43;
-    }
-
-    private void addAction(String key, String descKey, Consumer<Button> action, int center, int width, int y) {
-        Button b = Button.builder(Component.translatable(key), button -> action.accept(button))
-            .bounds(center - Math.min(210, width / 2), y, Math.min(420, width), 20)
-            .build();
-        tooltip(b, descKey);
-        addEntry(b, y);
-    }
-
-    private int addStatus(String key, int center, int y) {
-        Button b = Button.builder(Component.translatable(key, statusValue(key)), x -> {})
-            .bounds(center - 210, y, 420, 20)
-            .build();
+    private int status(int y, String key, Supplier<Component> value) {
+        Button b = hitbox(Component.translatable(key), q -> {}, mainX, y, mainW, 36);
         b.active = false;
-        addEntry(b, y);
-        return y + 28;
+        rows.add(new Row(b, key, key, value, y, Kind.STATUS));
+        return y + 38;
     }
 
-    private String statusValue(String key) {
-        if (key.equals("superoptimizer.compat.iris")) {
-            return net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("iris") ? "обнаружен" : "не установлен";
-        }
-        if (key.equals("superoptimizer.compat.entity_culling")) {
-            return net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("entityculling") ? "обнаружен" : "не установлен";
-        }
-        if (key.equals("superoptimizer.diag.entity")) {
-            return CullingContext.entityCulled() + " / " + CullingContext.entityChecks();
-        }
-        if (key.equals("superoptimizer.diag.block_entity")) {
-            return CullingContext.blockEntityCulled() + " / " + CullingContext.blockEntityChecks();
-        }
-        return "";
+    private int action(int y, String key, String desc, Consumer<Button> action) {
+        Button b = hitbox(Component.translatable(key), action, mainX, y, mainW, 36);
+        tooltip(b, desc);
+        rows.add(new Row(b, key, desc, () -> Component.literal("Открыть"), y, Kind.ACTION));
+        return y + 38;
     }
 
-    private void addEntry(Button b, int baseY) {
-        scrollEntries.add(new Entry(b, baseY));
+    private Button hitbox(Component label, Consumer<Button> action, int x, int y, int w, int h) {
+        Button b = Button.builder(label, q -> action.accept(q))
+                .bounds(x, y, Math.max(1, w), h)
+                .build();
+        b.setAlpha(0f);
         addRenderableWidget(b);
+        return b;
     }
 
     private void tooltip(Button b, String key) {
         b.setTooltip(Tooltip.create(Component.translatable(key)));
-        b.setTooltipDelay(Duration.ofMillis(300));
+        b.setTooltipDelay(Duration.ofMillis(250));
     }
 
-    private static Component label(String key, boolean value) {
-        return Component.translatable(key, value ? "ВКЛ" : "ВЫКЛ");
+    private Component profileName(SuperOptimizerClient.Preset preset) {
+        if (preset == null) return Component.literal("Пользовательский");
+        return switch (preset) {
+            case LIGHT -> Component.translatable("superoptimizer.preset.light");
+            case BALANCED -> Component.translatable("superoptimizer.preset.balanced");
+            case ADVANCED -> Component.literal("Максимум FPS");
+            case MICROWAVE -> Component.literal("Микроволновка");
+        };
     }
 
-    private void applyScroll() {
-        int top = 46;
-        int bottom = this.height - 60;
+    private SuperOptimizerClient.Preset detectPreset() {
+        if (match(SuperOptimizerClient.Preset.MICROWAVE)) return SuperOptimizerClient.Preset.MICROWAVE;
+        if (match(SuperOptimizerClient.Preset.LIGHT)) return SuperOptimizerClient.Preset.LIGHT;
+        if (match(SuperOptimizerClient.Preset.BALANCED)) return SuperOptimizerClient.Preset.BALANCED;
+        if (match(SuperOptimizerClient.Preset.ADVANCED)) return SuperOptimizerClient.Preset.ADVANCED;
+        return null;
+    }
 
-        for (Entry entry : scrollEntries) {
-            int y = entry.baseY() - (int) scroll;
-            entry.button().setY(y);
-            boolean visible = y + entry.button().getHeight() >= top && y <= bottom;
-            entry.button().setVisible(visible);
-        }
+    private boolean match(SuperOptimizerClient.Preset p) {
+        return switch (p) {
+            case MICROWAVE -> config.entityCulling && config.blockEntityCulling
+                    && config.directionalEntityCulling && !config.backgroundTasks
+                    && !config.shaderScanAsync && !config.diagnostics
+                    && config.reservedCores == 1 && config.workerThreads == 1;
+            case LIGHT -> config.entityCulling && !config.blockEntityCulling
+                    && config.skipNearEntityCulling && config.nearEntityDistance == 12
+                    && config.directionalEntityCulling && config.backgroundTasks
+                    && config.shaderScanAsync && config.diagnostics && !config.fileLogging;
+            case BALANCED -> config.entityCulling && config.blockEntityCulling
+                    && config.skipNearEntityCulling && config.nearEntityDistance == 12
+                    && config.directionalEntityCulling && config.backgroundTasks
+                    && config.shaderScanAsync && config.diagnostics && config.fileLogging;
+            case ADVANCED -> config.entityCulling && config.blockEntityCulling
+                    && !config.skipNearEntityCulling && config.nearEntityDistance == 0
+                    && config.directionalEntityCulling && config.backgroundTasks
+                    && config.shaderScanAsync && config.diagnostics && config.fileLogging;
+        };
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        int left = Math.max(0, 8 + 138);
-        if (mouseX >= left && mouseY >= 42 && mouseY <= this.height - 58 && maxScroll > 0) {
-            scroll = Math.max(0, Math.min(maxScroll, scroll - verticalAmount * 30));
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
+        if (mouseX >= mainX && mouseX <= mainX + mainW
+                && mouseY >= contentTop && mouseY <= contentBottom && maxScroll > 0) {
+            scroll = Math.max(0, Math.min(maxScroll, scroll - vertical * 28));
             applyScroll();
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
+        return super.mouseScrolled(mouseX, mouseY, horizontal, vertical);
+    }
+
+    private void applyScroll() {
+        for (Row row : rows) {
+            int y = row.y() - (int) scroll;
+            boolean visible = y + 36 >= contentTop && y <= contentBottom;
+            row.hitbox().setY(y);
+            row.hitbox().setVisible(visible);
+        }
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-        super.extractRenderState(graphics, mouseX, mouseY, delta);
+    public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float delta) {
+        super.extractRenderState(g, mouseX, mouseY, delta);
 
-        graphics.text(this.font, this.title, 8, 8, 0xFFFFFFFF, true);
-        graphics.text(this.font, Component.translatable("superoptimizer.gui.backend",
-            Minecraft.getInstance().options.preferredGraphicsBackend().toString()),
-            8, 22, 0xFF9FA8B5, false);
+        g.fill(0, 0, width, height, 0xE108111C);
+        g.fill(0, 0, width, 2, 0xFF20D7C7);
 
-        if (maxScroll > 0) {
-            int top = 46;
-            int bottom = this.height - 60;
-            int trackHeight = bottom - top;
-            int thumbHeight = Math.max(20, (int) (trackHeight * trackHeight / (trackHeight + maxScroll)));
-            int thumbY = top + (int) ((trackHeight - thumbHeight) * (scroll / maxScroll));
-            graphics.fill(this.width - 7, top, this.width - 4, bottom, 0x551A1F26);
-            graphics.fill(this.width - 7, thumbY, this.width - 4, thumbY + thumbHeight, 0xFF4CB9FF);
+        drawHeader(g);
+        drawNavigation(g, mouseX, mouseY);
+        drawMain(g, mouseX, mouseY);
+        drawFooter(g);
+
+        Row hover = hoveredRow(mouseX, mouseY);
+        if (hover != null) drawTooltipPanel(g, hover);
+    }
+
+    private void drawHeader(GuiGraphicsExtractor g) {
+        g.text(font, title, 16, 12, 0xFFF1F6FF, true);
+        g.text(font, Component.translatable("superoptimizer.gui.subtitle"), 16, 27, 0xFF91A0B7, false);
+    }
+
+    private void drawNavigation(GuiGraphicsExtractor g, int mouseX, int mouseY) {
+        g.fill(navX, 46, navX + navW, height - 46, 0xB508111D);
+
+        g.text(font, Component.literal("SuperOptimizer"), navX + 12, 52, 0xFFE8F2FF, true);
+        g.text(font, Component.literal("0.2.4-alpha"), navX + 12, 66, 0xFF7E8BA2, false);
+
+        for (NavButton item : nav) {
+            int y = item.y();
+            boolean selected = item.category() == category;
+            boolean hovered = mouseX >= navX && mouseX <= navX + navW
+                    && mouseY >= y && mouseY <= y + 34;
+
+            g.fill(navX + 6, y, navX + navW - 6, y + 34,
+                    selected ? 0xC51A3040 : hovered ? 0x8E132333 : 0x6B0C1724);
+            if (selected) {
+                g.fill(navX + 6, y, navX + 9, y + 34, 0xFF20D7C7);
+            }
+
+            String label = Component.translatable(item.category().key).getString();
+            label = fit(label, navW - 34);
+            g.text(font, Component.literal(label), navX + 16, y + 11,
+                    selected ? 0xFF20E5D2 : 0xFFC7D3E5, selected);
         }
+    }
+
+    private void drawMain(GuiGraphicsExtractor g, int mouseX, int mouseY) {
+        g.fill(mainX, contentTop, mainX + mainW, contentBottom, 0xB8081321);
+
+        String title = Component.translatable(category.key).getString();
+        g.text(font, Component.literal("+ " + title), mainX + 12, contentTop + 10, 0xFFEAF2FF, true);
+
+        int yStart = contentTop + 38;
+        for (Row row : rows) {
+            int y = row.y() - (int) scroll;
+            if (y + 36 < yStart || y > contentBottom) continue;
+
+            boolean hovered = mouseX >= mainX && mouseX <= mainX + mainW
+                    && mouseY >= y && mouseY <= y + 36;
+
+            g.fill(mainX, y, mainX + mainW, y + 34,
+                    hovered ? 0xB81B2A3B : 0x86101928);
+
+            String label = Component.translatable(row.key()).getString();
+            label = label.replace(": %s", "");
+            label = fit(label, mainW - 190);
+            g.text(font, Component.literal(label), mainX + 12, y + 11,
+                    hovered ? 0xFFEFF5FF : 0xFFD9E3F1, false);
+
+            Component value = row.value().get();
+            if (row.kind() == Kind.TOGGLE) {
+                drawCheckbox(g, mainX + mainW - 28, y + 9, "ВКЛ".equals(value.getString()));
+            } else {
+                String right = fitRight(value.getString(), mainW - 170);
+                int rw = font.width(right);
+                g.text(font, Component.literal(right),
+                        mainX + mainW - 16 - rw, y + 11,
+                        row.kind() == Kind.STATUS ? 0xFF7FE1E7 : 0xFFE8EEF7,
+                        row.kind() == Kind.PROFILE);
+            }
+        }
+    }
+
+    private void drawCheckbox(GuiGraphicsExtractor g, int x, int y, boolean checked) {
+        g.fill(x, y, x + 16, y + 16, checked ? 0xFF20D7C7 : 0xFF5C6B80);
+        g.fill(x + 3, y + 3, x + 13, y + 13, 0xD708111C);
+        if (checked) g.fill(x + 5, y + 5, x + 11, y + 11, 0xFF20D7C7);
+    }
+
+    private void drawFooter(GuiGraphicsExtractor g) {
+        g.fill(0, height - 42, width, height, 0xE008111B);
+        g.text(font, Component.literal("F8 — открыть • Наведи на параметр — подробности"),
+                navX + 8, height - 28, 0xFF7C8BA2, false);
+
+        int doneW = Math.min(130, Math.max(96, mainW / 3));
+        int x = mainX + mainW - doneW;
+        g.fill(x, height - 34, x + doneW, height - 8, 0xB7173947);
+        g.text(font, Component.translatable("gui.done"), x + (doneW / 2) - font.width(Component.translatable("gui.done")) / 2,
+                height - 25, 0xFFEAF4FF, true);
+    }
+
+    private void drawTooltipPanel(GuiGraphicsExtractor g, Row row) {
+        String text = Component.translatable(row.desc()).getString();
+        if (text.isBlank()) return;
+
+        int panelW = Math.min(360, Math.max(260, width / 3));
+        int panelH = 52;
+        int x = Math.min(width - panelW - 10, mainX + mainW + 8);
+        int y = Math.max(50, contentBottom - panelH - 8);
+
+        g.fill(x, y, x + panelW, y + panelH, 0xEF101C2B);
+        g.fill(x, y, x + 3, y + panelH, 0xFF20D7C7);
+
+        g.text(font, Component.literal("Описание"), x + 10, y + 9, 0xFF20D7C7, true);
+        g.text(font, Component.literal(fit(text, panelW - 24)), x + 10, y + 27, 0xFFC4D0E1, false);
+    }
+
+    private Row hoveredRow(int mouseX, int mouseY) {
+        for (Row row : rows) {
+            int y = row.y() - (int) scroll;
+            if (mouseX >= mainX && mouseX <= mainX + mainW
+                    && mouseY >= y && mouseY <= y + 36) return row;
+        }
+        return null;
+    }
+
+    private String fit(String value, int maxWidth) {
+        if (font.width(value) <= maxWidth) return value;
+        String ellipsis = "...";
+        String s = value;
+        while (s.length() > 1 && font.width(s + ellipsis) > maxWidth) {
+            s = s.substring(0, s.length() - 1);
+        }
+        return s + ellipsis;
+    }
+
+    private String fitRight(String value, int maxWidth) {
+        if (font.width(value) <= maxWidth) return value;
+        return fit(value, maxWidth);
     }
 
     @Override
     public void onClose() {
-        close();
-    }
-
-    private void close() {
         config.save(minecraft.gameDirectory.toPath().resolve("config"));
         SuperOptimizerClient.applyConfig();
         minecraft.setScreenAndShow(parent);
