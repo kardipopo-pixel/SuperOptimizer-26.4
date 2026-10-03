@@ -240,6 +240,27 @@ public final class PerformanceProfiler {
         }
     }
 
+
+    public record Comparison(
+            double fpsDeltaPercent,
+            double oneLowDeltaPercent,
+            double frameMsDeltaPercent
+    ) {}
+
+    public static synchronized Comparison comparison() {
+        if (before == null || after == null) return null;
+        return new Comparison(
+                percentDelta(before.fps(), after.fps()),
+                percentDelta(before.onePercentLow(), after.onePercentLow()),
+                percentDelta(before.frameMs(), after.frameMs())
+        );
+    }
+
+    private static double percentDelta(double beforeValue, double afterValue) {
+        if (Math.abs(beforeValue) < 0.000001) return 0.0;
+        return (afterValue - beforeValue) / Math.abs(beforeValue) * 100.0;
+    }
+
     public static Benchmark before() { return before; }
     public static Benchmark after() { return after; }
 
