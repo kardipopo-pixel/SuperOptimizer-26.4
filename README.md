@@ -1,38 +1,47 @@
 # SuperOptimizer 26.4
 
-**Minecraft target:** `26.4-alpha.2` (the version string reported by the user's Fabric Loader for Snapshot 2)  
-**Loader:** Fabric Loader `0.19.5`  
-**Java:** 25
+Клиентский Fabric-мод для Minecraft 26.4 Snapshot 2 (`26.4-snapshot-2` / локальная метка Fabric `26.4-alpha.2`).
 
-## Current status
+## Что реально реализовано
 
-This repository is a clean rebuild after the earlier experimental JAR failed during Mixin preparation because `MinecraftClientTickMixin` was missing a valid `@Mixin` annotation. The fragile mixin has been removed completely.
+- Консервативное entity culling через уже рассчитанный Minecraft список `LevelRenderer.visibleSections()`.
+- Консервативное block-entity culling только для заранее разрешённых локальных vanilla-типов.
+- 3×3×3 соседняя секция считается видимой: объект рендерится, если он может пересекать границу секции.
+- Большие entity, glowing entity, entity с outline/name tag/score/leash не cull-ятся.
+- При наличии Iris culling автоматически блокируется по умолчанию.
+- При наличии отдельного Entity Culling culling SuperOptimizer автоматически блокируется по умолчанию.
+- Ограниченный CPU worker pool подготовлен для независимых CPU-задач; он не пытается заменить GPU.
+- Русская конфигурация и меню по F8.
+- Shaderpack и GLSL-файлы Super Duper Vanilla не входят в проект и не изменяются.
 
-The current baseline deliberately contains **no mixins and no renderer hooks**. It only verifies that Fabric can load a client-only mod built against the configured target dependencies. No FPS improvement is claimed yet. Optimization features will be introduced one at a time after a successful build and runtime test.
+## Почему архитектура сделана именно так
 
-## Build locally
+Minecraft 26.4 использует LevelRenderState, где entity и block-entity уже представлены как render-state объекты, а LevelRenderer отправляет их через submitEntities и submitBlockEntities. SuperOptimizer вмешивается только в этот слой и не заменяет Vulkan renderer.
 
-Install a Java 25 JDK and Gradle 9.2.1, then run:
+Для visibility используется уже существующий список visibleSections, который формируется самим Minecraft. Это позволяет не запускать второй собственный occlusion graph и не читать изменяемый world state из worker threads.
 
-```sh
-gradle --no-daemon clean build
-```
+## Vulkan / Iris
 
-The JAR is written to `build/libs/`. GitHub Actions runs the same build on pushes and pull requests and uploads the JAR as an artifact if compilation succeeds.
+SuperOptimizer не вызывает OpenGL или Vulkan напрямую. Iris не объявляется Vulkan-совместимым. При обнаружении Iris culling автоматически выключается, чтобы не вмешиваться в shader-specific render passes.
 
-## Design requirements
+## Проверки CI
 
-- Do not modify shaderpacks or shader formulas. Preserve the original Super Duper Vanilla visuals.
-- Conservative visibility behavior: if visibility is uncertain, do not cull.
-- Never access mutable Minecraft world state from worker threads.
-- Keep CPU work bounded and avoid unbounded queues or per-frame object churn.
-- Do not bundle or copy Sodium, Iris, FerriteCore, or Entity Culling code.
-- Russian-language settings UI and optimization features come after baseline runtime validation.
+Каждый build:
 
-## Important Vulkan/Iris note
+1. Собирается на Java 25.
+2. Использует реальный Minecraft client jar 26.4.
+3. Проверяет API LevelRenderer/EntityRenderDispatcher/секций.
+4. Проверяет production JAR и Java 25 bytecode.
+5. Проверяет, что старого MinecraftClientTickMixin нет.
+6. Принудительно загружает LevelRenderer через game classloader, чтобы Mixin-transform был принят.
+7. Запускает headless client smoke test.
 
-This project does not claim to provide Iris-on-Vulkan support. It does not embed Iris or alter the selected graphics backend. Compatibility must be verified against the exact Minecraft snapshot and installed mod versions.
+Headless smoke test подтверждает загрузку Fabric, initializer и Mixin-transform. Он не заменяет тест на реальном Windows/Vulkan драйвере.
 
-## Build status
+## Сборка
 
-A successful CI artifact means compilation succeeded against the declared dependency coordinates. It does **not** by itself prove that the mod launches in a full client or improves FPS; runtime testing is still required.
+Требуется Java 25.
+
+    gradle --no-daemon clean build
+
+Production JAR находится в `build/libs/`.
