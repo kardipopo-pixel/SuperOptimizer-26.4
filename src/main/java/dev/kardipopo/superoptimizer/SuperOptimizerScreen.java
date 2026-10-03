@@ -159,7 +159,7 @@ public final class SuperOptimizerScreen extends Screen {
         Button b=hit(Component.translatable(key),q->{},mainX+14,y,mainW-28,44);b.active=false;
         rows.add(new Row(b,key,key,value,y,Kind.STATUS));return y+50;
     }
-    private Button hit(Component label,Consumer<Button> action,int x,int y,int w,int h){Button b=Button.builder(label,action).bounds(x,y,Math.max(1,w),h).build();b.setAlpha(0f);addRenderableWidget(b);return b;}
+    private Button hit(Component label,Consumer<Button> action,int x,int y,int w,int h){Button b=Button.builder(label,q->action.accept(q)).bounds(x,y,Math.max(1,w),h).build();b.setAlpha(0f);addRenderableWidget(b);return b;}
 
     private void buildProfiles(){
         int y=166;
