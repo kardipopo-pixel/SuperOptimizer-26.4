@@ -10,8 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -104,9 +106,15 @@ public final class SuperOptimizerClient implements ClientModInitializer {
             return t;
         };
 
-        executor = Executors.newFixedThreadPool(workers, factory);
+        int queueSize = Math.max(16, Math.min(config.chunkQueueLimit, 512));
+        executor = new ThreadPoolExecutor(
+                workers, workers, 30L, TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(queueSize),
+                factory,
+                new ThreadPoolExecutor.DiscardPolicy());
         SuperOptimizerLog.info("CPU worker pool: " + workers
-                + ", резерв CPU-ядер: " + config.reservedCores);
+                + ", резерв CPU-ядер: " + config.reservedCores
+                + ", bounded queue: " + queueSize);
     }
 
     public static void applyPreset(Preset preset) {
