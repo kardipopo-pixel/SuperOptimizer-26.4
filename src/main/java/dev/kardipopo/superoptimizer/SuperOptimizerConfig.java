@@ -10,7 +10,7 @@ import java.util.Properties;
 public final class SuperOptimizerConfig {
     public boolean enabled = true;
     public boolean asyncPreparation = true;
-    public boolean entityCulling = false;
+    public boolean entityCulling = true;
     public boolean blockEntityCulling = false;
     public int workerThreads = Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() / 2));
     public int reservedCores = Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
