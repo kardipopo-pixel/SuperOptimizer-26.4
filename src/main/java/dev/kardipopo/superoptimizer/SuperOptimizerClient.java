@@ -6,11 +6,14 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.network.chat.Component;
+import org.lwjgl.glfw.GLFW;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
@@ -19,8 +22,15 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public final class SuperOptimizerClient implements ClientModInitializer {
+    public enum Preset {
+        MICROWAVE,
+        LIGHT,
+        BALANCED,
+        ADVANCED
+    }
+
     public static final String MOD_ID = "superoptimizer";
-    public static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(MOD_ID);
+    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     private static SuperOptimizerConfig config;
     private static ExecutorService executor;
@@ -30,7 +40,8 @@ public final class SuperOptimizerClient implements ClientModInitializer {
     public void onInitializeClient() {
         Path configDir = Minecraft.getInstance().gameDirectory.toPath().resolve("config");
         config = SuperOptimizerConfig.load(configDir);
-        rebuildExecutor();
+        SuperOptimizerLog.init(configDir, config.fileLogging);
+        applyConfig();
 
         KeyMapping.Category category = KeyMapping.Category.register(
             net.minecraft.resources.Identifier.fromNamespaceAndPath(MOD_ID, "main")
@@ -38,14 +49,14 @@ public final class SuperOptimizerClient implements ClientModInitializer {
 
         openSettings = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key.superoptimizer.open_settings",
-            InputConstants.Type.KEYBOARD,
-            InputConstants.KEY_F8,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_F8,
             category
         ));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openSettings.consumeClick()) {
-                client.gui.setScreen(new SuperOptimizerScreen(null, config));
+                client.gui.setScreen(new SuperOptimizerScreen(client.gui.getCurrentScreen(), config));
             }
         });
 
@@ -65,15 +76,20 @@ public final class SuperOptimizerClient implements ClientModInitializer {
         });
 
         verifyMixinTargetLoaded();
-        LOGGER.info("SuperOptimizer 26.4: client bootstrap + visible settings integration loaded.");
+        SuperOptimizerLog.info("SuperOptimizer 26.4 запущен.");
     }
 
-    public static synchronized void rebuildExecutor() {
+    public static synchronized void applyConfig() {
         if (executor != null) {
             executor.shutdownNow();
             executor = null;
         }
-        if (config == null || !config.enabled || !config.asyncPreparation) return;
+        if (config == null || !config.enabled || !config.shaderScanAsync) {
+            if (config != null && !config.enabled) {
+                SuperOptimizerLog.info("Оптимизатор отключён.");
+            }
+            return;
+        }
 
         int cpus = Runtime.getRuntime().availableProcessors();
         int maxWorkers = Math.max(1, cpus - config.reservedCores);
@@ -87,6 +103,56 @@ public final class SuperOptimizerClient implements ClientModInitializer {
             return t;
         };
         executor = Executors.newFixedThreadPool(workers, factory);
+        SuperOptimizerLog.info("CPU worker pool: " + workers + " поток(ов), резерв: " + config.reservedCores);
+    }
+
+    public static void applyPreset(Preset preset) {
+        switch (preset) {
+            case MICROWAVE -> {
+                config.enabled = true;
+                config.entityCulling = true;
+                config.blockEntityCulling = false;
+                config.pauseDuringCameraMotion = true;
+                config.disableCullingWithIris = true;
+                config.disableCullingWithEntityCullingMod = true;
+                config.workerThreads = 1;
+                config.reservedCores = Math.max(2, Math.min(4, Runtime.getRuntime().availableProcessors() / 2));
+            }
+            case LIGHT -> {
+                config.enabled = true;
+                config.entityCulling = true;
+                config.blockEntityCulling = false;
+                config.pauseDuringCameraMotion = true;
+                config.disableCullingWithIris = true;
+                config.disableCullingWithEntityCullingMod = true;
+                config.workerThreads = Math.max(1, Math.min(2, Runtime.getRuntime().availableProcessors() / 4));
+                config.reservedCores = Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
+            }
+            case BALANCED -> {
+                config.enabled = true;
+                config.entityCulling = true;
+                config.blockEntityCulling = true;
+                config.pauseDuringCameraMotion = true;
+                config.disableCullingWithIris = true;
+                config.disableCullingWithEntityCullingMod = true;
+                config.workerThreads = Math.max(1, Math.min(3, Runtime.getRuntime().availableProcessors() / 3));
+                config.reservedCores = Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
+            }
+            case ADVANCED -> {
+                config.enabled = true;
+                config.entityCulling = true;
+                config.blockEntityCulling = true;
+                config.pauseDuringCameraMotion = true;
+                config.disableCullingWithIris = true;
+                config.disableCullingWithEntityCullingMod = true;
+                config.workerThreads = Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() / 2));
+                config.reservedCores = Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
+            }
+        }
+
+        config.save(Minecraft.getInstance().gameDirectory.toPath().resolve("config"));
+        applyConfig();
+        SuperOptimizerLog.info("Применён профиль: " + preset.name());
     }
 
     private static void verifyMixinTargetLoaded() {
@@ -100,6 +166,11 @@ public final class SuperOptimizerClient implements ClientModInitializer {
         }
     }
 
-    public static SuperOptimizerConfig config() { return config; }
-    public static ExecutorService executor() { return executor; }
+    public static SuperOptimizerConfig config() {
+        return config;
+    }
+
+    public static ExecutorService executor() {
+        return executor;
+    }
 }
