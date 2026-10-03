@@ -100,6 +100,7 @@ public final class SuperOptimizerClient implements ClientModInitializer {
                 config.pauseDuringCameraMotion = true;
                 config.skipNearEntityCulling = false;
                 config.nearEntityDistance = 0;
+                config.directionalEntityCulling = true;
                 config.disableCullingWithIris = true;
                 config.disableCullingWithEntityCullingMod = true;
                 config.backgroundTasks = false;
@@ -116,6 +117,7 @@ public final class SuperOptimizerClient implements ClientModInitializer {
                 config.pauseDuringCameraMotion = true;
                 config.skipNearEntityCulling = true;
                 config.nearEntityDistance = 12;
+                config.directionalEntityCulling = true;
                 config.disableCullingWithIris = true;
                 config.disableCullingWithEntityCullingMod = true;
                 config.backgroundTasks = true;
@@ -132,6 +134,7 @@ public final class SuperOptimizerClient implements ClientModInitializer {
                 config.pauseDuringCameraMotion = true;
                 config.skipNearEntityCulling = true;
                 config.nearEntityDistance = 12;
+                config.directionalEntityCulling = true;
                 config.disableCullingWithIris = true;
                 config.disableCullingWithEntityCullingMod = true;
                 config.backgroundTasks = true;
@@ -148,6 +151,7 @@ public final class SuperOptimizerClient implements ClientModInitializer {
                 config.pauseDuringCameraMotion = true;
                 config.skipNearEntityCulling = false;
                 config.nearEntityDistance = 0;
+                config.directionalEntityCulling = true;
                 config.disableCullingWithIris = true;
                 config.disableCullingWithEntityCullingMod = true;
                 config.backgroundTasks = true;
