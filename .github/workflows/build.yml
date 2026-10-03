@@ -38,35 +38,12 @@ jobs:
             grep -q 'submitBlockEntities'
           javap -classpath "$JAR" -p net.minecraft.client.renderer.entity.EntityRenderDispatcher |
             grep -q 'submit'
-          javap -classpath "$JAR" -p net.minecraft.client.renderer.chunk.SectionRenderDispatcher\$RenderSection |
+          javap -classpath "$JAR" -p 'net.minecraft.client.renderer.chunk.SectionRenderDispatcher$RenderSection' |
             grep -q 'getRenderOrigin'
           javap -classpath "$JAR" -p net.minecraft.client.renderer.SectionOcclusionGraph |
             grep -q 'expectedChunks'
 
-          MOD_JAR="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' -print -quit)"
-          test -n "$MOD_JAR"
-          python - "$MOD_JAR" <<'PY'
-import json
-import sys
-import zipfile
-
-jar_path = sys.argv[1]
-with zipfile.ZipFile(jar_path) as z:
-    names = set(z.namelist())
-    data = json.loads(z.read("fabric.mod.json"))
-    assert data["id"] == "superoptimizer"
-    assert "superoptimizer.mixins.json" in data["mixins"]
-    assert "dev/kardipopo/superoptimizer/mixin/LevelRendererEntityCullingMixin.class" in names
-    assert "dev/kardipopo/superoptimizer/mixin/LevelRendererBlockEntityCullingMixin.class" in names
-    assert "dev/kardipopo/superoptimizer/mixin/MinecraftClientTickMixin.class" not in names
-    assert not any(n.endswith(".java") for n in names)
-
-    class_bytes = z.read("dev/kardipopo/superoptimizer/SuperOptimizerClient.class")
-    major = int.from_bytes(class_bytes[6:8], "big")
-    assert major == 69, f"Expected Java 25 class file major 69, got {major}"
-
-print("Production JAR checks passed:", jar_path)
-PY
+          python scripts/verify_production_jar.py
 
       - name: Upload mod JAR
         uses: actions/upload-artifact@v4
