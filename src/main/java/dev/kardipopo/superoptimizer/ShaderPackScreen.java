@@ -15,6 +15,8 @@ public final class ShaderPackScreen extends Screen {
     private double scroll;
     private double maxScroll;
     private final List<Button> fileButtons = new ArrayList<>();
+    private int lastFingerprint = Integer.MIN_VALUE;
+    private boolean refreshQueued;
 
     public ShaderPackScreen(Screen parent, SuperOptimizerConfig config) {
         super(Component.translatable("superoptimizer.shaders.title"));
@@ -38,10 +40,12 @@ public final class ShaderPackScreen extends Screen {
 
         ShaderPackCatalog.refresh(minecraft);
         layoutFiles();
+        lastFingerprint = ShaderPackCatalog.fingerprint();
     }
 
     private void layoutFiles() {
         List<Path> packs = ShaderPackCatalog.snapshot();
+        lastFingerprint = ShaderPackCatalog.fingerprint();
         int top = 66;
         int rowHeight = 26;
         int visibleBottom = height - 8;
@@ -75,6 +79,15 @@ public final class ShaderPackScreen extends Screen {
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
         super.extractRenderState(graphics, mouseX, mouseY, delta);
+        int fingerprint = ShaderPackCatalog.fingerprint();
+        if (fingerprint != lastFingerprint && !refreshQueued) {
+            refreshQueued = true;
+            minecraft.execute(() -> {
+                refreshQueued = false;
+                if (minecraft.gui.getCurrentScreen() == this) layoutFiles();
+            });
+        }
+
         graphics.text(this.font, this.title, 8, 10, 0xFFFFFFFF, true);
 
         boolean iris = net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("iris");
