@@ -470,12 +470,18 @@ public final class SuperOptimizerScreen extends Screen {
         int current = profileIndex();
         String name = profileName();
         Button b = invisible(Component.literal(name), q -> {
-            int next = (current + 1) % 4;
-            applyProfile(SuperOptimizerClient.Preset.values()[next]);
+            SuperOptimizerClient.Preset[] order = {
+                    SuperOptimizerClient.Preset.LIGHT,
+                    SuperOptimizerClient.Preset.BALANCED,
+                    SuperOptimizerClient.Preset.ADVANCED,
+                    SuperOptimizerClient.Preset.MICROWAVE
+            };
+            int next = (current + 1) % order.length;
+            applyProfile(order[next]);
         }, mainX, y, mainW, 34);
         b.setTooltip(Tooltip.create(Component.translatable("superoptimizer.desc.profile.current")));
         b.setTooltipDelay(Duration.ofMillis(200));
-        rows.add(new Row(b, "superoptimizer.profile.current", "superoptimizer.desc.profile.current", () -> true, () -> current, y, Impact.BEST));
+        rows.add(new Row(b, "superoptimizer.profile.current", "superoptimizer.desc.profile.current", null, () -> current, y, Impact.BEST));
         return y + 38;
     }
 
@@ -695,12 +701,12 @@ public final class SuperOptimizerScreen extends Screen {
 
             String label = row.hitbox().getMessage().getString();
             if (label.contains(" = ")) label = label.substring(0, label.indexOf(" = "));
-            if (label.contains(": ")) {
+            if (row.descKey().equals(row.labelKey()) && label.contains(": ")) {
+                label = label.substring(0, label.indexOf(": "));
+            } else if (label.contains(": ")) {
                 int colon = label.indexOf(": ");
                 String suffix = label.substring(colon + 2);
-                if (!suffix.isEmpty() && (suffix.equals("ВКЛ") || suffix.equals("ВЫКЛ"))) {
-                    label = label.substring(0, colon);
-                }
+                if (suffix.equals("ВКЛ") || suffix.equals("ВЫКЛ")) label = label.substring(0, colon);
             }
             label = fit(label, mainW - 210);
             g.text(font, Component.literal(label), mainX + 16, y + 10, 0xFFDFE8F4, false);
