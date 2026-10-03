@@ -20,6 +20,7 @@ public final class SuperOptimizerClient implements ClientModInitializer {
     private static SuperOptimizerConfig config;
     private static ExecutorService executor;
     private static KeyMapping openSettings;
+    private static int diagnosticsTicks;
 
     @Override
     public void onInitializeClient() {
