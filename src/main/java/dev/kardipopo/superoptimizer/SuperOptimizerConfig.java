@@ -31,6 +31,9 @@ public final class SuperOptimizerConfig {
     public int adaptiveStepPercent = 10;
     public boolean adaptiveAutoPreset = false;
     public boolean adaptiveUnfocusedFpsCap = true;
+    public boolean thermalFriendlyMode = false;
+    public boolean hardwareAwareProfiles = true;
+    public boolean gpuStateOptimizer = true;
     public int unfocusedFps = 10;
 
     // Particles
@@ -153,6 +156,9 @@ public final class SuperOptimizerConfig {
             c.adaptiveAutoPreset = bool(p, "adaptiveAutoPreset", c.adaptiveAutoPreset);
             c.adaptiveUnfocusedFpsCap = bool(p, "adaptiveUnfocusedFpsCap", c.adaptiveUnfocusedFpsCap);
             c.unfocusedFps = clamp(integer(p, "unfocusedFps", c.unfocusedFps), 5, 30);
+            c.thermalFriendlyMode = bool(p, "thermalFriendlyMode", c.thermalFriendlyMode);
+            c.hardwareAwareProfiles = bool(p, "hardwareAwareProfiles", c.hardwareAwareProfiles);
+            c.gpuStateOptimizer = bool(p, "gpuStateOptimizer", c.gpuStateOptimizer);
 
             c.particleOptimization = bool(p, "particleOptimization", c.particleOptimization);
             c.maxParticles = clamp(integer(p, "maxParticles", c.maxParticles), 64, 32768);
@@ -261,6 +267,9 @@ public final class SuperOptimizerConfig {
             put(p,"adaptiveAutoPreset",adaptiveAutoPreset);
             put(p,"adaptiveUnfocusedFpsCap",adaptiveUnfocusedFpsCap);
             put(p,"unfocusedFps",unfocusedFps);
+            put(p,"thermalFriendlyMode",thermalFriendlyMode);
+            put(p,"hardwareAwareProfiles",hardwareAwareProfiles);
+            put(p,"gpuStateOptimizer",gpuStateOptimizer);
 
             put(p,"particleOptimization",particleOptimization);
             put(p,"maxParticles",maxParticles);
