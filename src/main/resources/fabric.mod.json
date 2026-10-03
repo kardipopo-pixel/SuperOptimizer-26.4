@@ -23,5 +23,6 @@
   "recommends": {},
   "mixins": [
     "superoptimizer.mixins.json"
-  ]
+  ],
+  "icon": "assets/superoptimizer/icon.png"
 }
