@@ -11,7 +11,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,14 +48,14 @@ public final class SuperOptimizerClient implements ClientModInitializer {
 
         openSettings = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key.superoptimizer.open_settings",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_F8,
+            InputConstants.Type.KEYBOARD,
+            InputConstants.KEY_F8,
             category
         ));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (openSettings.consumeClick()) {
-                client.gui.setScreen(new SuperOptimizerScreen(client.gui.getCurrentScreen(), config));
+                client.gui.setScreen(new SuperOptimizerScreen(client.gui.screen(), config));
             }
         });
 
