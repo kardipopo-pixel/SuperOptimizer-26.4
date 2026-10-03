@@ -46,6 +46,7 @@ public final class ParticleOptimizer {
         int max = AdaptivePerformanceController.isAdaptive()
                 ? AdaptivePerformanceController.maxParticles()
                 : c.maxParticles;
+        max = MemoryPressureController.scaleLimit(max, 64);
 
         try {
             int count = parseCount(Minecraft.getInstance().particleEngine.countParticles());
