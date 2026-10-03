@@ -16,6 +16,7 @@ public final class SuperOptimizerConfig {
     public boolean pauseDuringCameraMotion = true;
     public boolean skipNearEntityCulling = true;
     public int nearEntityDistance = 12;
+    public boolean directionalEntityCulling = true;
 
     // Compatibility
     public boolean disableCullingWithIris = true;
@@ -46,6 +47,7 @@ public final class SuperOptimizerConfig {
             c.pauseDuringCameraMotion = bool(p, "pauseDuringCameraMotion", c.pauseDuringCameraMotion);
             c.skipNearEntityCulling = bool(p, "skipNearEntityCulling", c.skipNearEntityCulling);
             c.nearEntityDistance = clamp(integer(p, "nearEntityDistance", c.nearEntityDistance), 0, 64);
+            c.directionalEntityCulling = bool(p, "directionalEntityCulling", c.directionalEntityCulling);
 
             c.disableCullingWithIris = bool(p, "disableCullingWithIris", c.disableCullingWithIris);
             c.disableCullingWithEntityCullingMod = bool(
@@ -76,6 +78,7 @@ public final class SuperOptimizerConfig {
             p.setProperty("pauseDuringCameraMotion", Boolean.toString(pauseDuringCameraMotion));
             p.setProperty("skipNearEntityCulling", Boolean.toString(skipNearEntityCulling));
             p.setProperty("nearEntityDistance", Integer.toString(nearEntityDistance));
+            p.setProperty("directionalEntityCulling", Boolean.toString(directionalEntityCulling));
 
             p.setProperty("disableCullingWithIris", Boolean.toString(disableCullingWithIris));
             p.setProperty("disableCullingWithEntityCullingMod", Boolean.toString(disableCullingWithEntityCullingMod));
