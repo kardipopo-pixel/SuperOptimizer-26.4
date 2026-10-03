@@ -48,7 +48,7 @@ jobs:
       - name: Upload mod JAR
         uses: actions/upload-artifact@v4
         with:
-          name: SuperOptimizer-26.4-alpha.2
+          name: SuperOptimizer-26.4-${{ github.sha }}
           path: build/libs/*.jar
           if-no-files-found: error
           retention-days: 14
