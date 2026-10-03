@@ -33,6 +33,8 @@ jobs:
           JAR="$(python scripts/find_minecraft_client_jar.py)"
           echo "== Button =="
           javap -classpath "$JAR" -p net.minecraft.client.gui.components.Button
+          echo "== Tooltip =="
+          javap -classpath "$JAR" -p net.minecraft.client.gui.components.Tooltip
           echo "== AbstractWidget =="
           javap -classpath "$JAR" -p net.minecraft.client.gui.components.AbstractWidget
           echo "== Minecraft =="
