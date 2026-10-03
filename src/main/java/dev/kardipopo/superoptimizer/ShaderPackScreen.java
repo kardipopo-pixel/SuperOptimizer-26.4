@@ -32,46 +32,58 @@ public final class ShaderPackScreen extends Screen {
     protected void init() {
         packButtons.clear();
 
-        int gap = 6;
-        int buttonW = Math.max(70, (this.width - gap * 5) / 4);
+        int gap = 5;
+        int buttonCount = 5;
+        int buttonW = Math.max(52, (this.width - gap * (buttonCount + 1)) / buttonCount);
         int x = gap;
 
-        Button iris = Button.builder(Component.translatable("superoptimizer.shaders.iris"), b -> {
-            if (!IrisBridge.openMainScreen(this)) {
-                SuperOptimizerLog.warn("Не удалось открыть совместимый Iris screen.");
-            }
-        }).bounds(x, 34, buttonW, 20).build();
-        iris.setTooltip(Tooltip.create(Component.translatable("superoptimizer.desc.shader_iris")));
-        iris.setTooltipDelay(Duration.ofMillis(300));
-        addRenderableWidget(iris);
+        addTopButton(Component.translatable("superoptimizer.shaders.iris"),
+            b -> {
+                if (!IrisBridge.openMainScreen(this)) {
+                    SuperOptimizerLog.warn("Не удалось открыть совместимый Iris screen.");
+                }
+            }, x, buttonW, "superoptimizer.desc.shader_iris");
         x += buttonW + gap;
 
-        Button importButton = Button.builder(Component.translatable("superoptimizer.shaders.import"),
-            b -> ShaderPackCatalog.importZip(minecraft)).bounds(x, 34, buttonW, 20).build();
-        importButton.setTooltip(Tooltip.create(Component.translatable("superoptimizer.desc.shader_import")));
-        importButton.setTooltipDelay(Duration.ofMillis(300));
-        addRenderableWidget(importButton);
+        Button toggle = Button.builder(Component.translatable(
+                "superoptimizer.shaders.toggle", IrisBridge.shadersEnabled() ? "ВКЛ" : "ВЫКЛ"),
+            b -> {
+                if (IrisBridge.setShadersEnabled(!IrisBridge.shadersEnabled())) {
+                    b.setMessage(Component.translatable(
+                        "superoptimizer.shaders.toggle", IrisBridge.shadersEnabled() ? "ВКЛ" : "ВЫКЛ"));
+                }
+            }).bounds(x, 34, buttonW, 20).build();
+        toggle.setTooltip(Tooltip.create(Component.translatable("superoptimizer.desc.shader_toggle")));
+        toggle.setTooltipDelay(Duration.ofMillis(300));
+        toggle.active = IrisBridge.isLoaded();
+        addRenderableWidget(toggle);
         x += buttonW + gap;
 
-        Button folder = Button.builder(Component.translatable("superoptimizer.shaders.folder"),
-            b -> ShaderPackCatalog.openFolder(minecraft)).bounds(x, 34, buttonW, 20).build();
-        folder.setTooltip(Tooltip.create(Component.translatable("superoptimizer.desc.shader_folder")));
-        folder.setTooltipDelay(Duration.ofMillis(300));
-        addRenderableWidget(folder);
+        addTopButton(Component.translatable("superoptimizer.shaders.import"),
+            b -> ShaderPackCatalog.importZip(minecraft), x, buttonW, "superoptimizer.desc.shader_import");
         x += buttonW + gap;
 
-        Button refresh = Button.builder(Component.translatable("superoptimizer.shaders.refresh"),
-            b -> ShaderPackCatalog.refresh(minecraft)).bounds(x, 34, buttonW, 20).build();
-        refresh.setTooltip(Tooltip.create(Component.translatable("superoptimizer.desc.shader_refresh")));
-        refresh.setTooltipDelay(Duration.ofMillis(300));
-        addRenderableWidget(refresh);
+        addTopButton(Component.translatable("superoptimizer.shaders.folder"),
+            b -> ShaderPackCatalog.openFolder(minecraft), x, buttonW, "superoptimizer.desc.shader_folder");
+        x += buttonW + gap;
 
+        addTopButton(Component.translatable("superoptimizer.shaders.refresh"),
+            b -> ShaderPackCatalog.refresh(minecraft), x, buttonW, "superoptimizer.desc.shader_refresh");
+
+        int doneW = Math.min(180, Math.max(90, this.width - 16));
         addRenderableWidget(Button.builder(Component.translatable("gui.done"),
-            b -> minecraft.setScreenAndShow(parent))
-            .bounds(this.width / 2 - 80, this.height - 28, 160, 20).build());
+            b -> close())
+            .bounds(this.width / 2 - doneW / 2, this.height - 28, doneW, 20).build());
 
         ShaderPackCatalog.refresh(minecraft);
         rebuildPackButtons();
+    }
+
+    private void addTopButton(Component text, Button.OnPress press, int x, int width, String tooltipKey) {
+        Button b = Button.builder(text, press).bounds(x, 34, width, 20).build();
+        b.setTooltip(Tooltip.create(Component.translatable(tooltipKey)));
+        b.setTooltipDelay(Duration.ofMillis(300));
+        addRenderableWidget(b);
     }
 
     private void rebuildPackButtons() {
@@ -85,9 +97,11 @@ public final class ShaderPackScreen extends Screen {
         int top = 72;
         int bottom = this.height - 38;
         int rowHeight = 26;
-        int rowWidth = Math.min(520, Math.max(160, right - left));
+        int rowWidth = Math.min(560, Math.max(150, right - left));
 
         maxScroll = Math.max(0, packs.size() * rowHeight - (bottom - top));
+        scroll = Math.max(0, Math.min(maxScroll, scroll));
+
         for (int i = 0; i < packs.size(); i++) {
             Path pack = packs.get(i);
             int y = top + i * rowHeight - (int) scroll;
@@ -95,7 +109,7 @@ public final class ShaderPackScreen extends Screen {
             Button b = Button.builder(Component.literal(pack.getFileName().toString()), button -> {
                 SuperOptimizerLog.info("Shaderpack выбран: " + pack.getFileName());
                 if (!IrisBridge.openMainScreen(this)) {
-                    SuperOptimizerLog.warn("Для применения shaderpack нужен совместимый shader loader; ZIP уже находится в shaderpacks.");
+                    SuperOptimizerLog.warn("Для фактического применения shaderpack нужен совместимый shader loader.");
                 }
             }).bounds(this.width / 2 - rowWidth / 2, y, rowWidth, 20).build();
 
@@ -105,17 +119,12 @@ public final class ShaderPackScreen extends Screen {
             boolean visible = y + 20 >= top && y <= bottom;
             b.setVisible(visible);
             b.active = visible;
+
             packButtons.add(b);
             addRenderableWidget(b);
         }
 
         lastFingerprint = ShaderPackCatalog.fingerprint();
-    }
-
-    @Override
-    public void onClose() {
-        closed = true;
-        minecraft.setScreenAndShow(parent);
     }
 
     @Override
@@ -158,5 +167,15 @@ public final class ShaderPackScreen extends Screen {
             graphics.fill(this.width - 7, top, this.width - 4, bottom, 0x551A1F26);
             graphics.fill(this.width - 7, thumbY, this.width - 4, thumbY + thumb, 0xFF4CB9FF);
         }
+    }
+
+    @Override
+    public void onClose() {
+        close();
+    }
+
+    private void close() {
+        closed = true;
+        minecraft.setScreenAndShow(parent);
     }
 }
