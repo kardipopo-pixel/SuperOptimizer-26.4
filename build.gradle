@@ -23,8 +23,15 @@ dependencies {
 
 processResources {
     inputs.property 'version', project.version
+    exclude '**/icon_base64.txt'
     filesMatching('fabric.mod.json') {
         expand 'version': project.version
+    }
+    doLast {
+        def src = project.file('src/main/resources/assets/superoptimizer/icon_base64.txt')
+        def out = project.file(destinationDir.toString() + '/assets/superoptimizer/icon.png')
+        out.parentFile.mkdirs()
+        out.bytes = src.text.trim().decodeBase64()
     }
 }
 
