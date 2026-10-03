@@ -38,6 +38,14 @@ jobs:
           javap -classpath "$JAR" -p net.minecraft.client.renderer.LevelRenderer
           echo "== LevelRenderState =="
           javap -classpath "$JAR" -p net.minecraft.client.renderer.state.level.LevelRenderState
+          echo "== EntityRenderState =="
+          javap -classpath "$JAR" -p net.minecraft.client.renderer.entity.state.EntityRenderState
+          echo "== BlockEntityRenderState =="
+          javap -classpath "$JAR" -p net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState
+          echo "== LevelRenderer.submitEntities bytecode =="
+          javap -classpath "$JAR" -p -c net.minecraft.client.renderer.LevelRenderer | awk '/private void submitEntities\(/,/private void submitBlockEntities\(/' | sed -n '1,900p'
+          echo "== LevelRenderer.submitBlockEntities bytecode =="
+          javap -classpath "$JAR" -p -c net.minecraft.client.renderer.LevelRenderer | awk '/private void submitBlockEntities\(/,/private void submitBlockDestroyAnimation\(/' | sed -n '1,900p'
       - name: Upload mod JAR
         uses: actions/upload-artifact@v4
         with:
