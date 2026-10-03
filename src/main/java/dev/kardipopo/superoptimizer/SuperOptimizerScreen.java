@@ -68,7 +68,7 @@ public final class SuperOptimizerScreen extends Screen {
     private final List<Row> rows = new ArrayList<>();
     private final List<Button> actionButtons = new ArrayList<>();
 
-    private int navX, navW, mainX, mainW;
+    private int navX, navW, mainX, mainW, navTop;
     private int contentTop, contentBottom, pageBottom;
     private double contentScroll, contentMaxScroll;
     private double navScroll, navMaxScroll;
@@ -108,17 +108,18 @@ public final class SuperOptimizerScreen extends Screen {
 
         contentTop = 78;
         contentBottom = this.height - 42;
+        navTop = 236;
 
         buildNav();
         buildPage();
 
         contentMaxScroll = Math.max(0, pageBottom - contentBottom + 10);
-        navMaxScroll = Math.max(0, Category.values().length * 36 - (contentBottom - 54));
+        navMaxScroll = Math.max(0, Category.values().length * 36 - (contentBottom - navTop));
         applyScroll();
     }
 
     private void buildNav() {
-        int y = 54;
+        int y = navTop;
         for (Category c : Category.values()) {
             Button b = invisible(Component.literal(c.fallback),
                     q -> minecraft.setScreenAndShow(new SuperOptimizerScreen(parent, config, c)),
@@ -494,14 +495,14 @@ public final class SuperOptimizerScreen extends Screen {
             setter.accept(value);
         }, mainX, y, mainW, 32);
         setupTooltip(b, desc);
-        rows.add(new Row(b, key, desc, () -> false, getter, y, impact));
+        rows.add(new Row(b, key, desc, null, getter, y, impact));
         return y + 34;
     }
 
     private int status(int y, String key, String value, Impact impact) {
         Button b = invisible(Component.translatable(key), q -> {}, mainX, y, mainW, 32);
         b.active = false;
-        rows.add(new Row(b, key, key, () -> false, () -> 0, y, impact));
+        rows.add(new Row(b, key, key, null, () -> 0, y, impact));
         // Store the visible value in an auxiliary message.
         b.setMessage(Component.translatable(key, value));
         return y + 34;
@@ -511,7 +512,7 @@ public final class SuperOptimizerScreen extends Screen {
         Button b = invisible(Component.translatable(key), action, mainX, y, mainW, 32);
         setupTooltip(b, desc);
         actionButtons.add(b);
-        rows.add(new Row(b, key, desc, () -> false, () -> 0, y, impact));
+        rows.add(new Row(b, key, desc, null, () -> 0, y, impact));
         return y + 34;
     }
 
@@ -573,8 +574,8 @@ public final class SuperOptimizerScreen extends Screen {
     private void applyScroll() {
         for (int i = 0; i < navButtons.size(); i++) {
             Button b = navButtons.get(i);
-            b.setY(54 + i * 36 - (int) navScroll);
-            b.setVisible(b.getY() + b.getHeight() >= 48 && b.getY() <= contentBottom);
+            b.setY(navTop + i * 36 - (int) navScroll);
+            b.setVisible(b.getY() + b.getHeight() >= navTop && b.getY() <= contentBottom);
         }
         for (Row row : rows) {
             int y = row.y() - (int) contentScroll;
@@ -594,7 +595,7 @@ public final class SuperOptimizerScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
-        if (mouseX >= navX && mouseX <= navX + navW && mouseY >= 48 && mouseY <= contentBottom) {
+        if (mouseX >= navX && mouseX <= navX + navW && mouseY >= navTop && mouseY <= contentBottom) {
             navScroll = clamp(navScroll - vertical * 28, 0, navMaxScroll);
             applyScroll();
             return true;
@@ -619,7 +620,7 @@ public final class SuperOptimizerScreen extends Screen {
         drawMain(g, mouseX, mouseY);
 
         if (contentMaxScroll > 0) drawScrollbar(g, mainX + mainW + 4, contentTop + 30, contentBottom - 4, contentScroll, contentMaxScroll);
-        if (navMaxScroll > 0) drawScrollbar(g, navX + navW - 5, 54, contentBottom, navScroll, navMaxScroll);
+        if (navMaxScroll > 0) drawScrollbar(g, navX + navW - 5, navTop, contentBottom, navScroll, navMaxScroll);
     }
 
     private void drawHeader(GuiGraphicsExtractor g) {
@@ -646,6 +647,21 @@ public final class SuperOptimizerScreen extends Screen {
         modY += 58;
         drawMod(g, "Entity Culling", ExternalModBridge.loaded("entityculling") ? ExternalModBridge.version("entityculling") : "не установлен",
                 modY, ExternalModBridge.loaded("entityculling"));
+
+        for (int i = 0; i < navButtons.size(); i++) {
+            Category c = Category.values()[i];
+            int y = navTop + i * 36 - (int) navScroll;
+            if (y + 32 < navTop || y > contentBottom) continue;
+            boolean selected = c == category;
+            boolean hoveredNav = mouseX >= navX + 4 && mouseX <= navX + navW - 4
+                    && mouseY >= y && mouseY <= y + 32;
+            g.fill(navX + 4, y, navX + navW - 4, y + 32,
+                    selected ? 0xB91B3A48 : hoveredNav ? 0x80152230 : 0x590B1621);
+            if (selected) g.fill(navX + 4, y, navX + 7, y + 32, 0xFF20D7C7);
+            String label = translatableOrFallback(c.key, c.fallback);
+            g.text(font, Component.literal(fit(label, navW - 26)), navX + 14, y + 10,
+                    selected ? 0xFF20D7C7 : 0xFFC8D4E4, selected);
+        }
     }
 
     private void drawMod(GuiGraphicsExtractor g, String name, String version, int y, boolean installed) {
@@ -691,7 +707,7 @@ public final class SuperOptimizerScreen extends Screen {
 
             String value = rowValue(row);
             int rw = font.width(value);
-            g.text(font, Component.literal(value), mainX + mainW - rw - 48, y + 10, 0xFFF2F6FA, row.hitbox().isHoveredOrFocused());
+            g.text(font, Component.literal(value), mainX + mainW - rw - 48, y + 10, 0xFFF2F6FA, hovered == row);
 
             if (row.impact() != null) {
                 int pw = font.width(row.impact().label) + 10;
@@ -770,7 +786,7 @@ public final class SuperOptimizerScreen extends Screen {
         if (row.descKey().equals(row.labelKey()) && rawMessage.contains(": ")) {
             return rawMessage.substring(rawMessage.indexOf(": ") + 2);
         }
-        if (row.bool() != null && row.bool().getAsBoolean()) return "ВКЛ";
+        if (row.bool() != null) return row.bool().getAsBoolean() ? "ВКЛ" : "ВЫКЛ";
         if (row.bool() != null && (row.labelKey().contains("enabled") || row.labelKey().contains("option"))) {
             String key = row.labelKey();
             if (!key.contains("profile") && !key.contains("profiling") && !key.contains("target")) return "ВЫКЛ";
