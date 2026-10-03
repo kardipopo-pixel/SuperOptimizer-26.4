@@ -259,12 +259,17 @@ public final class SuperOptimizerScreen extends Screen {
     }
 
     private void cycleProfile() {
-        SuperOptimizerClient.Preset next = switch (activePreset) {
-            case LIGHT -> SuperOptimizerClient.Preset.BALANCED;
-            case BALANCED -> SuperOptimizerClient.Preset.ADVANCED;
-            case ADVANCED -> SuperOptimizerClient.Preset.MICROWAVE;
-            case MICROWAVE -> SuperOptimizerClient.Preset.LIGHT;
-        };
+        SuperOptimizerClient.Preset next;
+        if (activePreset == null) {
+            next = SuperOptimizerClient.Preset.LIGHT;
+        } else {
+            next = switch (activePreset) {
+                case LIGHT -> SuperOptimizerClient.Preset.BALANCED;
+                case BALANCED -> SuperOptimizerClient.Preset.ADVANCED;
+                case ADVANCED -> SuperOptimizerClient.Preset.MICROWAVE;
+                case MICROWAVE -> SuperOptimizerClient.Preset.LIGHT;
+            };
+        }
         activePreset = next;
         SuperOptimizerClient.applyPreset(next);
         init();
