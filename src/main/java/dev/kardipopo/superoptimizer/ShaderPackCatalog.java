@@ -51,7 +51,9 @@ public final class ShaderPackCatalog {
 
         if (SuperOptimizerClient.config() != null && SuperOptimizerClient.config().shaderScanAsync
                 && SuperOptimizerClient.executor() != null) {
-            SuperOptimizerClient.executor().execute(scan);
+            if (!SuperOptimizerClient.submitBackgroundTask(scan)) {
+                SuperOptimizerLog.info("Shaderpack scan отложен Task Backpressure/Frame Budget.");
+            }
         } else {
             scan.run();
         }
