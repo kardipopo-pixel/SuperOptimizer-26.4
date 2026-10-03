@@ -1,10 +1,15 @@
 package dev.kardipopo.superoptimizer;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
+import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.core.SectionPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+
+import java.util.Set;
 
 /**
  * Render-thread-only context. It consumes Minecraft's already-computed visible
@@ -12,17 +17,49 @@ import net.minecraft.core.SectionPos;
  */
 public final class CullingContext {
     private static final LongOpenHashSet VISIBLE = new LongOpenHashSet();
+
+    private static final Set<String> SAFE_BLOCK_ENTITY_TYPES = Set.of(
+        "minecraft:chest",
+        "minecraft:trapped_chest",
+        "minecraft:ender_chest",
+        "minecraft:shulker_box",
+        "minecraft:furnace",
+        "minecraft:blast_furnace",
+        "minecraft:smoker",
+        "minecraft:hopper",
+        "minecraft:brewing_stand",
+        "minecraft:decorated_pot",
+        "minecraft:sign",
+        "minecraft:hanging_sign",
+        "minecraft:skull",
+        "minecraft:banner",
+        "minecraft:bell"
+    );
+
     private static boolean active;
 
     private CullingContext() {}
 
-    public static void begin(LevelRenderer renderer) {
+    public static void begin(LevelRenderer renderer, boolean blockEntities) {
         VISIBLE.clear();
-        active = SuperOptimizerClient.config() != null
-                && SuperOptimizerClient.config().enabled
-                && SuperOptimizerClient.config().entityCulling;
+
+        SuperOptimizerConfig config = SuperOptimizerClient.config();
+        active = config != null && config.enabled
+            && (blockEntities ? config.blockEntityCulling : config.entityCulling);
 
         if (!active) return;
+
+        if (config.disableCullingWithIris
+                && FabricLoader.getInstance().isModLoaded("iris")) {
+            active = false;
+            return;
+        }
+
+        if (config.disableCullingWithEntityCullingMod
+                && FabricLoader.getInstance().isModLoaded("entityculling")) {
+            active = false;
+            return;
+        }
 
         for (SectionRenderDispatcher.RenderSection section : renderer.visibleSections()) {
             if (section == null) continue;
@@ -35,13 +72,6 @@ public final class CullingContext {
         active = false;
     }
 
-    /**
-     * Conservative entity policy:
-     * - never cull large/extended render states;
-     * - never cull entities with name/score/leash data;
-     * - never cull entities that glow or have explicit outline data;
-     * - otherwise, render if the entity section or any adjacent section is visible.
-     */
     public static boolean shouldSubmit(EntityRenderState state) {
         if (!active || state == null) return true;
 
@@ -49,17 +79,28 @@ public final class CullingContext {
         if (state.leashStates != null && !state.leashStates.isEmpty()) return true;
         if (state.appearsGlowing()) return true;
         if (state.outlineColor != EntityRenderState.NO_OUTLINE) return true;
-
         if (state.boundingBoxWidth > 2.5f || state.boundingBoxHeight > 4.5f) return true;
 
         int sx = SectionPos.blockToSectionCoord((int) Math.floor(state.x));
         int sy = SectionPos.blockToSectionCoord((int) Math.floor(state.y));
         int sz = SectionPos.blockToSectionCoord((int) Math.floor(state.z));
 
-        long base = SectionPos.asLong(sx, sy, sz);
-        if (VISIBLE.contains(base)) return true;
+        if (VISIBLE.contains(SectionPos.asLong(sx, sy, sz))) return true;
+        return neighborhoodVisible(sx, sy, sz);
+    }
 
-        // Conservative 3x3x3 neighborhood: an entity can overlap section borders.
+    public static boolean shouldSubmitBlockEntity(BlockEntityRenderState state) {
+        if (!active || state == null || state.blockPos == null || state.blockEntityType == null) return true;
+
+        var id = BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(state.blockEntityType);
+        if (id == null || !SAFE_BLOCK_ENTITY_TYPES.contains(id.toString())) return true;
+
+        SectionPos section = SectionPos.of(state.blockPos);
+        if (VISIBLE.contains(section.asLong())) return true;
+        return neighborhoodVisible(section.x(), section.y(), section.z());
+    }
+
+    private static boolean neighborhoodVisible(int sx, int sy, int sz) {
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
                 for (int dz = -1; dz <= 1; dz++) {
@@ -70,7 +111,6 @@ public final class CullingContext {
                 }
             }
         }
-
         return false;
     }
 }
