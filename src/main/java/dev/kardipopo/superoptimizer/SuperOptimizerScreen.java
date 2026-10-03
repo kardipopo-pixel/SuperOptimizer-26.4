@@ -36,6 +36,7 @@ public final class SuperOptimizerScreen extends Screen {
         COMPATIBILITY("superoptimizer.category.compatibility", "Совместимость"),
         DIAGNOSTICS("superoptimizer.category.diagnostics", "Диагностика"),
         EXPERIMENTAL("superoptimizer.category.experimental", "Экспериментальные"),
+        AB_LAB("superoptimizer.category.ab_lab", "A/B Optimization Lab"),
         PRESETS("superoptimizer.category.presets", "Профили"),
         SODIUM("superoptimizer.integration.sodium", "Sodium"),
         IRIS("superoptimizer.integration.iris", "Iris"),
@@ -154,6 +155,7 @@ public final class SuperOptimizerScreen extends Screen {
             case COMPATIBILITY -> y = compatibility(y);
             case DIAGNOSTICS -> y = diagnostics(y);
             case EXPERIMENTAL -> y = experimental(y);
+            case AB_LAB -> y = abLab(y);
             case PRESETS -> y = presets(y);
             case SODIUM -> y = external("sodium", y);
             case IRIS -> y = external("iris", y);
@@ -485,6 +487,7 @@ public final class SuperOptimizerScreen extends Screen {
             ParticleOptimizer.resetStats();
         }, Impact.LOW);
         y = action(y, "superoptimizer.action.rollback", "superoptimizer.desc.rollback", q -> SelfHealingManager.rollback(), Impact.MEDIUM);
+        y = action(y, "superoptimizer.action.export_report", "superoptimizer.desc.export_report", q -> DiagnosticReportExporter.export(configPath()), Impact.BEST);
         return y;
     }
 
@@ -509,6 +512,25 @@ public final class SuperOptimizerScreen extends Screen {
         return y;
     }
 
+    private int abLab(int y) {
+        y = header(y, "superoptimizer.category.ab_lab", "superoptimizer.page.ab_lab.desc");
+        PerformanceProfiler.Benchmark before = PerformanceProfiler.before();
+        PerformanceProfiler.Benchmark after = PerformanceProfiler.after();
+        y = status(y, "superoptimizer.lab.state", before == null ? "готов к тесту ДО" : after == null ? "ожидается тест ПОСЛЕ" : "пара готова", Impact.BEST);
+        if (before != null) y = status(y, "superoptimizer.lab.before", format("%.1f FPS | %.2f ms | %.1f 1%% low | %s", before.fps(), before.frameMs(), before.onePercentLow(), before.bottleneck()), Impact.MEDIUM);
+        if (after != null) y = status(y, "superoptimizer.lab.after", format("%.1f FPS | %.2f ms | %.1f 1%% low | %s", after.fps(), after.frameMs(), after.onePercentLow(), after.bottleneck()), Impact.MEDIUM);
+        PerformanceProfiler.Comparison cmp = PerformanceProfiler.comparison();
+        if (cmp != null) {
+            y = status(y, "superoptimizer.lab.fps_delta", format("%+.2f%%", cmp.fpsDeltaPercent()), Impact.BEST);
+            y = status(y, "superoptimizer.lab.low_delta", format("%+.2f%%", cmp.oneLowDeltaPercent()), Impact.BEST);
+            y = status(y, "superoptimizer.lab.frame_delta", format("%+.2f%%", cmp.frameMsDeltaPercent()), Impact.BEST);
+        }
+        y = action(y, "superoptimizer.action.lab_before", "superoptimizer.desc.benchmark_before", q -> PerformanceProfiler.startBenchmark(configPath()), Impact.BEST);
+        y = action(y, "superoptimizer.action.lab_after", "superoptimizer.desc.benchmark_after", q -> PerformanceProfiler.finishBenchmark(configPath()), Impact.BEST);
+        y = action(y, "superoptimizer.action.lab_reset", "superoptimizer.desc.reset_profiler", q -> PerformanceProfiler.clearHistory(), Impact.LOW);
+        y = action(y, "superoptimizer.action.export_report", "superoptimizer.desc.export_report", q -> DiagnosticReportExporter.export(configPath()), Impact.BEST);
+        return y;
+    }
     private int presets(int y) {
         y = header(y, "superoptimizer.category.presets", "superoptimizer.page.presets.desc");
         y = action(y, "superoptimizer.preset.light", "superoptimizer.desc.preset.light",
