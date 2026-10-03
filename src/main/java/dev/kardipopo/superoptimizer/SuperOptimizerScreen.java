@@ -2,8 +2,8 @@ package dev.kardipopo.superoptimizer;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 public final class SuperOptimizerScreen extends Screen {
@@ -25,6 +25,8 @@ public final class SuperOptimizerScreen extends Screen {
         addRenderableWidget(toggle("superoptimizer.option.async", config.asyncPreparation, v -> config.asyncPreparation = v, cx, y)); y += 24;
         addRenderableWidget(toggle("superoptimizer.option.entity", config.entityCulling, v -> config.entityCulling = v, cx, y)); y += 24;
         addRenderableWidget(toggle("superoptimizer.option.block_entity", config.blockEntityCulling, v -> config.blockEntityCulling = v, cx, y)); y += 24;
+        addRenderableWidget(toggle("superoptimizer.option.iris_lock", config.disableCullingWithIris, v -> config.disableCullingWithIris = v, cx, y)); y += 24;
+        addRenderableWidget(toggle("superoptimizer.option.entity_culling_lock", config.disableCullingWithEntityCullingMod, v -> config.disableCullingWithEntityCullingMod = v, cx, y)); y += 24;
 
         addRenderableWidget(Button.builder(Component.translatable("superoptimizer.option.workers", config.workerThreads),
             b -> {
@@ -40,7 +42,19 @@ public final class SuperOptimizerScreen extends Screen {
                 b.setMessage(Component.translatable("superoptimizer.option.reserved", config.reservedCores));
             }).bounds(cx - 155, y, 310, 20).build()); y += 24;
 
-        addRenderableWidget(toggle("superoptimizer.option.pause_motion", config.pauseDuringCameraMotion, v -> config.pauseDuringCameraMotion = v, cx, y)); y += 30;
+        addRenderableWidget(toggle("superoptimizer.option.pause_motion", config.pauseDuringCameraMotion, v -> config.pauseDuringCameraMotion = v, cx, y)); y += 24;
+
+        addRenderableWidget(Button.builder(Component.translatable("superoptimizer.option.safe_profile"), b -> {
+            config.enabled = true;
+            config.asyncPreparation = true;
+            config.entityCulling = true;
+            config.blockEntityCulling = false;
+            config.disableCullingWithIris = true;
+            config.disableCullingWithEntityCullingMod = true;
+            config.pauseDuringCameraMotion = true;
+            config.save(Minecraft.getInstance().gameDirectory.toPath().resolve("config"));
+            Minecraft.getInstance().gui.setScreen(new SuperOptimizerScreen(parent, config));
+        }).bounds(cx - 155, y, 310, 20).build()); y += 30;
 
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> close())
             .bounds(cx - 100, y, 200, 20).build());
