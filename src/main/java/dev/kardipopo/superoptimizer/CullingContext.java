@@ -35,6 +35,13 @@ public final class CullingContext {
 
     private static boolean active;
     private static boolean lastActive;
+
+    // Reuse one primitive visibility set between the entity and block-entity
+    // submission passes of the same frame.
+    private static boolean visibilityPrepared;
+    private static LevelRenderer preparedRenderer;
+    private static boolean entityPassOpen;
+
     private static double lastCamX;
     private static double lastCamY;
     private static double lastCamZ;
@@ -49,9 +56,20 @@ public final class CullingContext {
     private CullingContext() {}
 
     public static void begin(LevelRenderer renderer, boolean blockEntities) {
-        VISIBLE.clear();
-
         SuperOptimizerConfig config = SuperOptimizerClient.config();
+
+        boolean reuseVisibility = blockEntities
+            && entityPassOpen
+            && preparedRenderer == renderer
+            && visibilityPrepared
+            && config != null
+            && config.blockEntityCulling;
+
+        if (!reuseVisibility) {
+            VISIBLE.clear();
+            visibilityPrepared = false;
+        }
+
         active = config != null
             && config.enabled
             && (blockEntities ? config.blockEntityCulling : config.entityCulling);
@@ -60,6 +78,7 @@ public final class CullingContext {
             disabledReason = config == null ? "конфигурация не загружена"
                 : !config.enabled ? "оптимизатор выключен"
                 : blockEntities ? "culling block entity выключен" : "culling сущностей выключен";
+            if (!blockEntities) entityPassOpen = false;
             lastActive = false;
             return;
         }
@@ -67,6 +86,7 @@ public final class CullingContext {
         if (config.disableCullingWithIris && FabricLoader.getInstance().isModLoaded("iris")) {
             active = false;
             disabledReason = "обнаружен Iris";
+            if (!blockEntities) entityPassOpen = false;
             lastActive = false;
             return;
         }
@@ -75,27 +95,30 @@ public final class CullingContext {
                 && FabricLoader.getInstance().isModLoaded("entityculling")) {
             active = false;
             disabledReason = "обнаружен Entity Culling";
+            if (!blockEntities) entityPassOpen = false;
             lastActive = false;
             return;
         }
 
         var cameraEntity = Minecraft.getInstance().getCameraEntity();
-        if (cameraEntity != null) {
-            if (config.pauseDuringCameraMotion && haveCamera) {
-                double dx = cameraEntity.getX() - lastCamX;
-                double dy = cameraEntity.getY() - lastCamY;
-                double dz = cameraEntity.getZ() - lastCamZ;
-                if (dx * dx + dy * dy + dz * dz > 0.0625) {
-                    active = false;
-                    disabledReason = "камера движется";
-                    lastCamX = cameraEntity.getX();
-                    lastCamY = cameraEntity.getY();
-                    lastCamZ = cameraEntity.getZ();
-                    haveCamera = true;
-                    lastActive = false;
-                    return;
-                }
+        if (cameraEntity != null && config.pauseDuringCameraMotion && haveCamera) {
+            double dx = cameraEntity.getX() - lastCamX;
+            double dy = cameraEntity.getY() - lastCamY;
+            double dz = cameraEntity.getZ() - lastCamZ;
+            if (dx * dx + dy * dy + dz * dz > 0.0625) {
+                active = false;
+                disabledReason = "камера движется";
+                lastCamX = cameraEntity.getX();
+                lastCamY = cameraEntity.getY();
+                lastCamZ = cameraEntity.getZ();
+                haveCamera = true;
+                if (!blockEntities) entityPassOpen = false;
+                lastActive = false;
+                return;
             }
+        }
+
+        if (cameraEntity != null) {
             lastCamX = cameraEntity.getX();
             lastCamY = cameraEntity.getY();
             lastCamZ = cameraEntity.getZ();
@@ -104,11 +127,17 @@ public final class CullingContext {
             haveCamera = false;
         }
 
-        for (SectionRenderDispatcher.RenderSection section : renderer.visibleSections()) {
-            if (section != null) {
-                VISIBLE.add(SectionPos.asLong(section.getRenderOrigin()));
+        if (!reuseVisibility) {
+            for (SectionRenderDispatcher.RenderSection section : renderer.visibleSections()) {
+                if (section != null) {
+                    VISIBLE.add(SectionPos.asLong(section.getRenderOrigin()));
+                }
             }
+            preparedRenderer = renderer;
+            visibilityPrepared = true;
         }
+
+        entityPassOpen = !blockEntities;
 
         if (!lastActive) {
             SuperOptimizerLog.info("Culling активирован: " + VISIBLE.size() + " видимых секций.");
@@ -118,7 +147,17 @@ public final class CullingContext {
     }
 
     public static void end() {
+        SuperOptimizerConfig config = SuperOptimizerClient.config();
+
+        if (entityPassOpen && config != null && config.blockEntityCulling) {
+            active = false;
+            return;
+        }
+
         VISIBLE.clear();
+        visibilityPrepared = false;
+        preparedRenderer = null;
+        entityPassOpen = false;
         active = false;
     }
 
@@ -133,6 +172,18 @@ public final class CullingContext {
                 || state.boundingBoxWidth > 2.5f
                 || state.boundingBoxHeight > 4.5f) {
             return true;
+        }
+
+        SuperOptimizerConfig config = SuperOptimizerClient.config();
+        if (config != null && config.skipNearEntityCulling) {
+            var camera = Minecraft.getInstance().getCameraEntity();
+            if (camera != null) {
+                double dx = state.x - camera.getX();
+                double dy = state.y - camera.getY();
+                double dz = state.z - camera.getZ();
+                double near = config.nearEntityDistance;
+                if (dx * dx + dy * dy + dz * dz < near * near) return true;
+            }
         }
 
         int sx = SectionPos.blockToSectionCoord((int) Math.floor(state.x));
