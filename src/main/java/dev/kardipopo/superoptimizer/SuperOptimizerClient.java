@@ -44,6 +44,7 @@ public final class SuperOptimizerClient implements ClientModInitializer {
             }
         });
 
+        verifyMixinTargetLoaded();
         LOGGER.info("SuperOptimizer 26.4: clean client bootstrap loaded.");
     }
 
@@ -66,6 +67,17 @@ public final class SuperOptimizerClient implements ClientModInitializer {
             return t;
         };
         executor = Executors.newFixedThreadPool(workers, factory);
+    }
+
+    private static void verifyMixinTargetLoaded() {
+        try {
+            Class.forName("net.minecraft.client.renderer.LevelRenderer", false, SuperOptimizerClient.class.getClassLoader());
+            LOGGER.info("SuperOptimizer 26.4: LevelRenderer target class loaded and Mixin transformation was accepted.");
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("SuperOptimizer could not load the 26.4 LevelRenderer target", e);
+        } catch (LinkageError e) {
+            throw new IllegalStateException("SuperOptimizer Mixin target failed to link on Minecraft 26.4", e);
+        }
     }
 
     public static SuperOptimizerConfig config() { return config; }
