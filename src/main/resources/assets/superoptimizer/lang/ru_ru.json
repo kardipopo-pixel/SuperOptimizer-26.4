@@ -1,0 +1,12 @@
+{
+  "superoptimizer.gui.title": "SuperOptimizer",
+  "superoptimizer.gui.subtitle": "Безопасная настройка производительности 26.4",
+  "key.superoptimizer.open_settings": "Открыть настройки SuperOptimizer",
+  "superoptimizer.option.enabled": "Оптимизатор: %s",
+  "superoptimizer.option.async": "Асинхронная подготовка: %s",
+  "superoptimizer.option.entity": "Culling сущностей: %s",
+  "superoptimizer.option.block_entity": "Culling Block Entity: %s",
+  "superoptimizer.option.workers": "Потоков SuperOptimizer: %s",
+  "superoptimizer.option.reserved": "Оставлять CPU-ядер свободными: %s",
+  "superoptimizer.option.pause_motion": "Пауза при движении камеры: %s"
+}
