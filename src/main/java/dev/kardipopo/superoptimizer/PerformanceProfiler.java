@@ -249,6 +249,13 @@ public final class PerformanceProfiler {
         lastFrameMs=0;
     }
 
+    public static synchronized double[] frameHistory() {
+        double[] out = new double[frameTimes.size()];
+        int i = 0;
+        for (double v : frameTimes) out[i++] = v;
+        return out;
+    }
+
     public static long lastFrameNs(){return lastFrameNs;}
     public static double lastFrameMs(){return lastFrameMs;}
     public static double currentFps(){return lastFrameMs>0?1000.0/lastFrameMs:0;}
