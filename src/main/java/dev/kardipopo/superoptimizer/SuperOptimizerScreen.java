@@ -336,7 +336,7 @@ public final class SuperOptimizerScreen extends Screen {
         y = toggle(y, "superoptimizer.option.cache_cleanup", "superoptimizer.desc.cache_cleanup",
                 () -> config.resourceCacheCleanup, v -> { config.resourceCacheCleanup = v; markCustom(); }, Impact.MEDIUM);
         y = toggle(y, "superoptimizer.option.measured_gc", "superoptimizer.desc.measured_gc",
-                () -> config.measuredGcControl, v -> { config.measuredGcControl = v; markCustom(); }, MEDIUM);
+                () -> config.measuredGcControl, v -> { config.measuredGcControl = v; markCustom(); }, Impact.MEDIUM);
         return y;
     }
 
@@ -765,12 +765,16 @@ public final class SuperOptimizerScreen extends Screen {
     }
 
     private String rowValue(Row row) {
+        if (row.labelKey().equals("superoptimizer.profile.current")) return profileName();
+        String rawMessage = row.hitbox().getMessage().getString();
+        if (row.descKey().equals(row.labelKey()) && rawMessage.contains(": ")) {
+            return rawMessage.substring(rawMessage.indexOf(": ") + 2);
+        }
         if (row.bool() != null && row.bool().getAsBoolean()) return "ВКЛ";
         if (row.bool() != null && (row.labelKey().contains("enabled") || row.labelKey().contains("option"))) {
             String key = row.labelKey();
             if (!key.contains("profile") && !key.contains("profiling") && !key.contains("target")) return "ВЫКЛ";
         }
-        if (row.labelKey().equals("superoptimizer.profile.current")) return profileName();
         int v = row.integer().getAsInt();
         if (row.labelKey().contains("fps")) return Integer.toString(v);
         if (row.labelKey().contains("distance")) return v + " бл.";
