@@ -28,6 +28,11 @@ public final class SuperOptimizerScreen extends Screen {
         CHUNKS("superoptimizer.category.chunks", "Чанки и Frame Pacing"),
         MEMORY("superoptimizer.category.memory", "Память и кэши"),
         LOADING("superoptimizer.category.loading", "Загрузка и Storage"),
+        HARDWARE("superoptimizer.category.hardware", "CPU / GPU / Железо"),
+        RESOURCES("superoptimizer.category.resources", "Ресурсы и текстуры"),
+        WORLD("superoptimizer.category.world", "Мир / Сеть / Redstone"),
+        JAVA("superoptimizer.category.java", "Java Runtime"),
+        LIGHTING_SOUND("superoptimizer.category.lighting_sound", "Свет и звук"),
         COMPATIBILITY("superoptimizer.category.compatibility", "Совместимость"),
         DIAGNOSTICS("superoptimizer.category.diagnostics", "Диагностика"),
         EXPERIMENTAL("superoptimizer.category.experimental", "Экспериментальные"),
@@ -141,6 +146,11 @@ public final class SuperOptimizerScreen extends Screen {
             case CHUNKS -> y = chunks(y);
             case MEMORY -> y = memory(y);
             case LOADING -> y = loading(y);
+            case HARDWARE -> y = hardware(y);
+            case RESOURCES -> y = resources(y);
+            case WORLD -> y = world(y);
+            case JAVA -> y = javaRuntime(y);
+            case LIGHTING_SOUND -> y = lightingSound(y);
             case COMPATIBILITY -> y = compatibility(y);
             case DIAGNOSTICS -> y = diagnostics(y);
             case EXPERIMENTAL -> y = experimental(y);
@@ -357,6 +367,78 @@ public final class SuperOptimizerScreen extends Screen {
                 () -> config.backgroundTasks, v -> { config.backgroundTasks = v; markCustom(); SuperOptimizerClient.applyConfig(); }, Impact.MEDIUM);
         y = toggle(y, "superoptimizer.option.shader_scan_async", "superoptimizer.desc.shader_scan_async",
                 () -> config.shaderScanAsync, v -> { config.shaderScanAsync = v; markCustom(); }, Impact.LOW);
+        return y;
+    }
+
+    private int hardware(int y) {
+        y = header(y, "superoptimizer.category.hardware", "superoptimizer.page.hardware.desc");
+        y = toggle(y, "superoptimizer.option.hardware_profiles", "superoptimizer.desc.hardware_profiles",
+                () -> config.hardwareAwareProfiles, v -> { config.hardwareAwareProfiles = v; markCustom(); }, Impact.BEST);
+        y = toggle(y, "superoptimizer.option.gpu_state_optimizer", "superoptimizer.desc.gpu_state_optimizer",
+                () -> config.gpuStateOptimizer, v -> { config.gpuStateOptimizer = v; markCustom(); }, Impact.MEDIUM);
+        y = status(y, "superoptimizer.hardware.cpu", PerformanceProfiler.currentCpu() < 0 ? "UNKNOWN" : format("%.0f%%", PerformanceProfiler.currentCpu()), Impact.MEDIUM);
+        y = status(y, "superoptimizer.hardware.gpu", PerformanceProfiler.currentGpu() < 0 ? "UNKNOWN" : format("%.0f%%", PerformanceProfiler.currentGpu()), Impact.MEDIUM);
+        y = toggle(y, "superoptimizer.option.thermal", "superoptimizer.desc.thermal",
+                () -> config.thermalFriendlyMode, v -> { config.thermalFriendlyMode = v; markCustom(); }, Impact.BEST);
+        y = value(y, "superoptimizer.option.workers", "superoptimizer.desc.workers",
+                () -> config.workerThreads, 1, Math.max(1, Math.min(16, Runtime.getRuntime().availableProcessors())), 1,
+                v -> { config.workerThreads = v; markCustom(); SuperOptimizerClient.applyConfig(); }, Impact.MEDIUM);
+        y = value(y, "superoptimizer.option.reserved", "superoptimizer.desc.reserved",
+                () -> config.reservedCores, 0, Math.max(0, Runtime.getRuntime().availableProcessors() - 1), 1,
+                v -> { config.reservedCores = v; markCustom(); SuperOptimizerClient.applyConfig(); }, Impact.MEDIUM);
+        return y;
+    }
+
+    private int resources(int y) {
+        y = header(y, "superoptimizer.category.resources", "superoptimizer.page.resources.desc");
+        y = toggle(y, "superoptimizer.option.model_cache", "superoptimizer.desc.model_cache",
+                () -> config.modelCache, v -> { config.modelCache = v; markCustom(); }, Impact.MEDIUM);
+        y = toggle(y, "superoptimizer.option.resource_reload_diff", "superoptimizer.desc.resource_reload_diff",
+                () -> config.resourceReloadDiff, v -> { config.resourceReloadDiff = v; markCustom(); }, Impact.MEDIUM);
+        y = toggle(y, "superoptimizer.option.text_cache", "superoptimizer.desc.text_cache",
+                () -> config.textLayoutCache, v -> { config.textLayoutCache = v; markCustom(); }, Impact.LOW);
+        y = toggle(y, "superoptimizer.option.async_resources", "superoptimizer.desc.async_resources",
+                () -> config.asyncResourcePreparation, v -> { config.asyncResourcePreparation = v; markCustom(); }, Impact.BEST);
+        y = toggle(y, "superoptimizer.option.weather_lod", "superoptimizer.desc.weather_lod",
+                () -> config.weatherLod, v -> { config.weatherLod = v; markCustom(); }, Impact.UNKNOWN);
+        return y;
+    }
+
+    private int world(int y) {
+        y = header(y, "superoptimizer.category.world", "superoptimizer.page.world.desc");
+        y = toggle(y, "superoptimizer.option.world_prefetch", "superoptimizer.desc.world_prefetch",
+                () -> config.worldDataPrefetch, v -> { config.worldDataPrefetch = v; markCustom(); }, Impact.MEDIUM);
+        y = toggle(y, "superoptimizer.option.pathfinding_budget", "superoptimizer.desc.pathfinding_budget",
+                () -> config.backgroundPathfindingBudget, v -> { config.backgroundPathfindingBudget = v; markCustom(); }, Impact.UNKNOWN);
+        y = status(y, "superoptimizer.world.networking", "client-side policy only", Impact.UNKNOWN);
+        y = status(y, "superoptimizer.world.redstone", "server logic unchanged", Impact.UNKNOWN);
+        y = toggle(y, "superoptimizer.option.task_backpressure", "superoptimizer.desc.task_backpressure",
+                () -> config.taskBackpressure, v -> { config.taskBackpressure = v; markCustom(); }, Impact.BEST);
+        return y;
+    }
+
+    private int javaRuntime(int y) {
+        y = header(y, "superoptimizer.category.java", "superoptimizer.page.java.desc");
+        Runtime rt = Runtime.getRuntime();
+        double used = (rt.totalMemory() - rt.freeMemory()) / 1048576.0;
+        double max = rt.maxMemory() / 1048576.0;
+        y = status(y, "superoptimizer.java.heap", format("%.0f / %.0f MiB", used, max), Impact.MEDIUM);
+        y = toggle(y, "superoptimizer.option.measured_gc", "superoptimizer.desc.measured_gc",
+                () -> config.measuredGcControl, v -> { config.measuredGcControl = v; markCustom(); }, Impact.BEST);
+        y = value(y, "superoptimizer.option.cache_budget", "superoptimizer.desc.cache_budget",
+                () -> config.cacheBudgetMb, 64, 4096, 64, v -> { config.cacheBudgetMb = v; markCustom(); }, Impact.MEDIUM);
+        y = status(y, "superoptimizer.java.runtime", System.getProperty("java.version"), Impact.LOW);
+        return y;
+    }
+
+    private int lightingSound(int y) {
+        y = header(y, "superoptimizer.category.lighting_sound", "superoptimizer.page.lighting_sound.desc");
+        y = toggle(y, "superoptimizer.option.lighting_diagnostics", "superoptimizer.desc.lighting_diagnostics",
+                () -> config.lightingDiagnostics, v -> { config.lightingDiagnostics = v; markCustom(); }, Impact.MEDIUM);
+        y = toggle(y, "superoptimizer.option.sound_limit", "superoptimizer.desc.sound_limit",
+                () -> config.soundLimit, v -> { config.soundLimit = v; markCustom(); }, Impact.LOW);
+        y = value(y, "superoptimizer.option.max_sounds", "superoptimizer.desc.max_sounds",
+                () -> config.maxConcurrentSounds, 8, 256, 8, v -> { config.maxConcurrentSounds = v; markCustom(); }, Impact.LOW);
         return y;
     }
 
