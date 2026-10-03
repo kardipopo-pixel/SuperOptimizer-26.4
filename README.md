@@ -1,23 +1,38 @@
 # SuperOptimizer 26.4
 
-Client-side Fabric optimization mod prototype for Minecraft 26.4 Snapshot 2 / `26.4-alpha.2`.
+**Minecraft target:** `26.4-alpha.2` (the version string reported by the user's Fabric Loader for Snapshot 2)  
+**Loader:** Fabric Loader `0.19.5`  
+**Java:** 25
 
-## Important status
+## Current status
 
-This repository is being rebuilt from a clean baseline after the previous experimental JAR crashed during Mixin preparation. The old `MinecraftClientTickMixin` was invalid and is intentionally **not included** in this baseline. No performance or runtime compatibility claims are made until CI compiles against the real Minecraft/Fabric dependencies and the client is tested.
+This repository is a clean rebuild after the earlier experimental JAR failed during Mixin preparation because `MinecraftClientTickMixin` was missing a valid `@Mixin` annotation. The fragile mixin has been removed completely.
 
-## Goals
+The current baseline deliberately contains **no mixins and no renderer hooks**. It only verifies that Fabric can load a client-only mod built against the configured target dependencies. No FPS improvement is claimed yet. Optimization features will be introduced one at a time after a successful build and runtime test.
 
-- Preserve shaderpack visuals: no shader files or shader formulas are modified.
-- Be conservative: if visibility is uncertain, render the object.
-- Keep expensive world queries off the render thread only when they can be done safely from snapshots.
-- Provide Russian configuration/UI in a later, separately tested step.
-- Never bundle or copy Sodium, Iris, FerriteCore, or Entity Culling code.
+## Build locally
 
-## Build
+Install a Java 25 JDK and Gradle 9.2.1, then run:
 
-Use Java 25. Run `gradle build` with Gradle 9.x, or use the GitHub Actions workflow. If the selected Minecraft/Fabric artifact coordinates are unavailable, CI should fail rather than producing a fake JAR.
+```sh
+gradle --no-daemon clean build
+```
 
-## Current limitations
+The JAR is written to `build/libs/`. GitHub Actions runs the same build on pushes and pull requests and uploads the JAR as an artifact if compilation succeeds.
 
-The current baseline intentionally contains no mixins and no active culling logic. First goal is a clean, reproducible Fabric build for the target version; optimizations will be added only after target mappings and runtime hooks are verified.
+## Design requirements
+
+- Do not modify shaderpacks or shader formulas. Preserve the original Super Duper Vanilla visuals.
+- Conservative visibility behavior: if visibility is uncertain, do not cull.
+- Never access mutable Minecraft world state from worker threads.
+- Keep CPU work bounded and avoid unbounded queues or per-frame object churn.
+- Do not bundle or copy Sodium, Iris, FerriteCore, or Entity Culling code.
+- Russian-language settings UI and optimization features come after baseline runtime validation.
+
+## Important Vulkan/Iris note
+
+This project does not claim to provide Iris-on-Vulkan support. It does not embed Iris or alter the selected graphics backend. Compatibility must be verified against the exact Minecraft snapshot and installed mod versions.
+
+## Build status
+
+A successful CI artifact means compilation succeeded against the declared dependency coordinates. It does **not** by itself prove that the mod launches in a full client or improves FPS; runtime testing is still required.
