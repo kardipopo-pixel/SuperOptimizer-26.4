@@ -37,6 +37,11 @@ public final class CullingContext {
     );
 
     private static boolean active;
+    private static long entityChecks;
+    private static long entityCulled;
+    private static long blockEntityChecks;
+    private static long blockEntityCulled;
+    private static String disabledReason = "неизвестно";
 
     private CullingContext() {}
 
@@ -46,18 +51,23 @@ public final class CullingContext {
         SuperOptimizerConfig config = SuperOptimizerClient.config();
         active = config != null && config.enabled
             && (blockEntities ? config.blockEntityCulling : config.entityCulling);
+        disabledReason = active ? "" : (config == null ? "конфигурация не загружена"
+            : !config.enabled ? "оптимизатор выключен"
+            : blockEntities ? "culling block entity выключен" : "culling сущностей выключен");
 
         if (!active) return;
 
         if (config.disableCullingWithIris
                 && FabricLoader.getInstance().isModLoaded("iris")) {
             active = false;
+            disabledReason = "обнаружен Iris";
             return;
         }
 
         if (config.disableCullingWithEntityCullingMod
                 && FabricLoader.getInstance().isModLoaded("entityculling")) {
             active = false;
+            disabledReason = "обнаружен Entity Culling";
             return;
         }
 
@@ -86,18 +96,36 @@ public final class CullingContext {
         int sz = SectionPos.blockToSectionCoord((int) Math.floor(state.z));
 
         if (VISIBLE.contains(SectionPos.asLong(sx, sy, sz))) return true;
-        return neighborhoodVisible(sx, sy, sz);
+        boolean visible = neighborhoodVisible(sx, sy, sz);
+        if (!visible) entityCulled++;
+        return visible;
     }
 
     public static boolean shouldSubmitBlockEntity(BlockEntityRenderState state) {
-        if (!active || state == null || state.blockPos == null || state.blockEntityType == null) return true;
+        if (state == null) return true;
+        blockEntityChecks++;
+        if (!active || state.blockPos == null || state.blockEntityType == null) return true;
 
         var id = BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(state.blockEntityType);
         if (id == null || !SAFE_BLOCK_ENTITY_TYPES.contains(id.toString())) return true;
 
         SectionPos section = SectionPos.of(state.blockPos);
         if (VISIBLE.contains(section.asLong())) return true;
-        return neighborhoodVisible(section.x(), section.y(), section.z());
+        boolean visible = neighborhoodVisible(section.x(), section.y(), section.z());
+        if (!visible) blockEntityCulled++;
+        return visible;
+    }
+
+    public static long entityChecks() { return entityChecks; }
+    public static long entityCulled() { return entityCulled; }
+    public static long blockEntityChecks() { return blockEntityChecks; }
+    public static long blockEntityCulled() { return blockEntityCulled; }
+    public static boolean active() { return active; }
+    public static String disabledReason() { return disabledReason; }
+
+    public static void resetStats() {
+        entityChecks = entityCulled = 0;
+        blockEntityChecks = blockEntityCulled = 0;
     }
 
     private static boolean neighborhoodVisible(int sx, int sy, int sz) {
