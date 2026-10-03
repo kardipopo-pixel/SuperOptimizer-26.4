@@ -26,6 +26,21 @@ jobs:
           gradle-version: '9.7.1'
       - name: Build with real Fabric/Minecraft dependencies
         run: gradle --no-daemon clean build
+      - name: Probe 26.4 UI APIs
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="$(python scripts/find_minecraft_client_jar.py)"
+          echo "== Button =="
+          javap -classpath "$JAR" -p net.minecraft.client.gui.components.Button
+          echo "== AbstractWidget =="
+          javap -classpath "$JAR" -p net.minecraft.client.gui.components.AbstractWidget
+          echo "== Minecraft =="
+          javap -classpath "$JAR" -p net.minecraft.client.Minecraft | grep -E ' screen\(| setScreen|gui\(' || true
+          echo "== KeyMapping/InputConstants =="
+          javap -classpath "$JAR" -p net.minecraft.client.KeyMapping
+          javap -classpath "$JAR" -p com.mojang.blaze3d.platform.InputConstants\$Type
+
       - name: Verify 26.4 API and production JAR
         shell: bash
         run: |
