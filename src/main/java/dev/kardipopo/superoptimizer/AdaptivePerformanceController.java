@@ -16,6 +16,7 @@ public final class AdaptivePerformanceController {
     private static int effectiveMaxParticles = 4096;
     private static int effectiveEntityDistance = 160;
     private static boolean initialized;
+    private static int autoTier = 1;
 
     private AdaptivePerformanceController() {}
 
@@ -25,6 +26,7 @@ public final class AdaptivePerformanceController {
         effectiveMaxParticles = config.maxParticles;
         effectiveEntityDistance = config.entityRenderDistance;
         qualityScale = 1.0;
+        autoTier = 1;
         pressureTicks = 0;
         recoveryTicks = 0;
         lastChangeNs = System.nanoTime();
@@ -77,6 +79,14 @@ public final class AdaptivePerformanceController {
         if (Math.abs(qualityScale - old) < 0.001) return;
 
         int step = Math.max(1, c.adaptiveStepPercent);
+
+        if (c.adaptiveAutoPreset) {
+            autoTier = qualityScale <= 0.50 ? 3 : qualityScale <= 0.75 ? 2 : qualityScale < 0.95 ? 1 : 0;
+        }
+
+        if (c.thermalFriendlyMode && PerformanceProfiler.currentCpu() >= 85) {
+            qualityScale = Math.min(qualityScale, 0.65);
+        }
 
         if (c.particleAdaptive) {
             int distance = (int)Math.round(c.particleDistance * qualityScale);
@@ -143,6 +153,15 @@ public final class AdaptivePerformanceController {
     public static int entityDistance() {
         return effectiveEntityDistance > 0 ? effectiveEntityDistance : 160;
     }
+    public static String runtimeProfileName() {
+        return switch (autoTier) {
+            case 3 -> "Микроволновка";
+            case 2 -> "Максимальный FPS";
+            case 1 -> "Сбалансированный";
+            default -> "Лёгкий";
+        };
+    }
+
     public static boolean isAdaptive() {
         SuperOptimizerConfig c = SuperOptimizerClient.config();
         return c != null && c.enabled && c.adaptivePerformance;
