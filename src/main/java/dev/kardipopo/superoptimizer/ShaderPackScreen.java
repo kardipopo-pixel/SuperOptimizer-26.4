@@ -59,8 +59,6 @@ public final class ShaderPackScreen extends Screen {
             Button b = Button.builder(Component.literal(path.getFileName().toString()), button -> {
                 SuperOptimizerLog.info("Shaderpack выбран для просмотра: " + path.getFileName());
             }).bounds(this.width / 2 - 220, y, 440, 20).build();
-            b.visible = y + 20 >= top && y <= visibleBottom;
-            b.active = b.visible;
             fileButtons.add(b);
             addRenderableWidget(b);
         }
@@ -84,7 +82,7 @@ public final class ShaderPackScreen extends Screen {
             refreshQueued = true;
             minecraft.execute(() -> {
                 refreshQueued = false;
-                if (minecraft.gui.getCurrentScreen() == this) layoutFiles();
+                if (minecraft.gui.screen() == this) layoutFiles();
             });
         }
 
