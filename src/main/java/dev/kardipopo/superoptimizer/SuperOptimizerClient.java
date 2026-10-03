@@ -35,6 +35,7 @@ public final class SuperOptimizerClient implements ClientModInitializer {
         Path configDir = Minecraft.getInstance().gameDirectory.toPath().resolve("config");
 
         config = SuperOptimizerConfig.load(configDir);
+        HardwareAwareProfiles.applyIfAutomatic();
         SuperOptimizerLog.init(configDir, config.fileLogging);
         PerformanceProfiler.configure(config);
         AdaptivePerformanceController.init(config);
