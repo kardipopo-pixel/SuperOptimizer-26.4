@@ -22,7 +22,7 @@ public abstract class LevelRendererEntityCullingMixin {
             LevelRenderState levelRenderState,
             SubmitNodeCollector collector,
             CallbackInfo ci) {
-        CullingContext.begin((LevelRenderer) (Object) this);
+        CullingContext.begin((LevelRenderer) (Object) this, false);
     }
 
     @Inject(method = "submitEntities", at = @At("TAIL"))
