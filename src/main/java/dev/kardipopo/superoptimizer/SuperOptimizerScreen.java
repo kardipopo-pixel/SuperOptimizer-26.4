@@ -1,9 +1,9 @@
 package dev.kardipopo.superoptimizer;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
 public final class SuperOptimizerScreen extends Screen {
@@ -19,50 +19,39 @@ public final class SuperOptimizerScreen extends Screen {
     @Override
     protected void init() {
         int cx = this.width / 2;
-        int y = 56;
+        int y = 52;
 
-        this.addRenderableWidget(Button.builder(label("superoptimizer.option.enabled", config.enabled),
-                b -> { config.enabled = !config.enabled; b.setMessage(label("superoptimizer.option.enabled", config.enabled)); })
-            .bounds(cx - 155, y, 310, 20).build());
-        y += 25;
+        addRenderableWidget(toggle("superoptimizer.option.enabled", config.enabled, v -> config.enabled = v, cx, y)); y += 24;
+        addRenderableWidget(toggle("superoptimizer.option.async", config.asyncPreparation, v -> config.asyncPreparation = v, cx, y)); y += 24;
+        addRenderableWidget(toggle("superoptimizer.option.entity", config.entityCulling, v -> config.entityCulling = v, cx, y)); y += 24;
+        addRenderableWidget(toggle("superoptimizer.option.block_entity", config.blockEntityCulling, v -> config.blockEntityCulling = v, cx, y)); y += 24;
 
-        this.addRenderableWidget(Button.builder(label("superoptimizer.option.async", config.asyncPreparation),
-                b -> { config.asyncPreparation = !config.asyncPreparation; b.setMessage(label("superoptimizer.option.async", config.asyncPreparation)); })
-            .bounds(cx - 155, y, 310, 20).build());
-        y += 25;
+        addRenderableWidget(Button.builder(Component.translatable("superoptimizer.option.workers", config.workerThreads),
+            b -> {
+                int max = Math.max(1, Math.min(16, Runtime.getRuntime().availableProcessors() - config.reservedCores));
+                config.workerThreads = config.workerThreads >= max ? 1 : config.workerThreads + 1;
+                b.setMessage(Component.translatable("superoptimizer.option.workers", config.workerThreads));
+            }).bounds(cx - 155, y, 310, 20).build()); y += 24;
 
-        this.addRenderableWidget(Button.builder(label("superoptimizer.option.entity", config.entityCulling),
-                b -> { config.entityCulling = !config.entityCulling; b.setMessage(label("superoptimizer.option.entity", config.entityCulling)); })
-            .bounds(cx - 155, y, 310, 20).build());
-        y += 25;
+        addRenderableWidget(Button.builder(Component.translatable("superoptimizer.option.reserved", config.reservedCores),
+            b -> {
+                int max = Math.min(8, Math.max(0, Runtime.getRuntime().availableProcessors() - 1));
+                config.reservedCores = config.reservedCores >= max ? 0 : config.reservedCores + 1;
+                b.setMessage(Component.translatable("superoptimizer.option.reserved", config.reservedCores));
+            }).bounds(cx - 155, y, 310, 20).build()); y += 24;
 
-        this.addRenderableWidget(Button.builder(label("superoptimizer.option.block_entity", config.blockEntityCulling),
-                b -> { config.blockEntityCulling = !config.blockEntityCulling; b.setMessage(label("superoptimizer.option.block_entity", config.blockEntityCulling)); })
-            .bounds(cx - 155, y, 310, 20).build());
-        y += 25;
+        addRenderableWidget(toggle("superoptimizer.option.pause_motion", config.pauseDuringCameraMotion, v -> config.pauseDuringCameraMotion = v, cx, y)); y += 30;
 
-        this.addRenderableWidget(Button.builder(Component.translatable("superoptimizer.option.workers", config.workerThreads),
-                b -> { config.workerThreads = next(config.workerThreads, 1, Math.max(1, Runtime.getRuntime().availableProcessors() / 2)); b.setMessage(Component.translatable("superoptimizer.option.workers", config.workerThreads)); })
-            .bounds(cx - 155, y, 310, 20).build());
-        y += 25;
-
-        this.addRenderableWidget(Button.builder(Component.translatable("superoptimizer.option.reserved", config.reservedCores),
-                b -> { config.reservedCores = next(config.reservedCores, 0, Math.min(8, Runtime.getRuntime().availableProcessors() - 1)); b.setMessage(Component.translatable("superoptimizer.option.reserved", config.reservedCores)); })
-            .bounds(cx - 155, y, 310, 20).build());
-        y += 25;
-
-        this.addRenderableWidget(Button.builder(label("superoptimizer.option.pause_motion", config.pauseDuringCameraMotion),
-                b -> { config.pauseDuringCameraMotion = !config.pauseDuringCameraMotion; b.setMessage(label("superoptimizer.option.pause_motion", config.pauseDuringCameraMotion)); })
-            .bounds(cx - 155, y, 310, 20).build());
-        y += 30;
-
-        this.addRenderableWidget(Button.builder(Component.translatable("gui.done"),
-                b -> close())
+        addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> close())
             .bounds(cx - 100, y, 200, 20).build());
     }
 
-    private static int next(int value, int min, int max) {
-        return value >= max ? min : value + 1;
+    private Button toggle(String key, boolean value, java.util.function.BooleanConsumer setter, int cx, int y) {
+        return Button.builder(label(key, value), b -> {
+            value = !value;
+            setter.accept(value);
+            b.setMessage(label(key, value));
+        }).bounds(cx - 155, y, 310, 20).build();
     }
 
     private static Component label(String key, boolean value) {
@@ -71,15 +60,11 @@ public final class SuperOptimizerScreen extends Screen {
 
     private void close() {
         config.save(Minecraft.getInstance().gameDirectory.toPath().resolve("config"));
-        Minecraft.getInstance().setScreen(parent);
+        Minecraft.getInstance().gui.setScreen(parent);
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
-        this.renderBackground(graphics);
-        graphics.drawCenteredString(this.font, this.title, this.width / 2, 24, 0xFFFFFFFF);
-        graphics.drawCenteredString(this.font,
-            Component.translatable("superoptimizer.gui.subtitle"), this.width / 2, 40, 0xFFB0B0B0);
-        super.render(graphics, mouseX, mouseY, delta);
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+        super.extractRenderState(graphics, mouseX, mouseY, delta);
     }
 }
