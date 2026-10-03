@@ -3,16 +3,22 @@
   "id": "superoptimizer",
   "version": "${version}",
   "name": "SuperOptimizer",
-  "description": "Экспериментальный клиентский оптимизатор. Консервативная базовая сборка без вмешательства в рендеринг.",
-  "authors": ["kardipopo-pixel"],
+  "description": "Клиентский SuperOptimizer для Minecraft 26.4: русское меню, bounded CPU worker-pool и консервативная база для последующих оптимизаций.",
+  "authors": [
+    "kardipopo-pixel"
+  ],
   "license": "MIT",
   "environment": "client",
   "entrypoints": {
-    "client": ["dev.kardipopo.superoptimizer.SuperOptimizerClient"]
+    "client": [
+      "dev.kardipopo.superoptimizer.SuperOptimizerClient"
+    ]
   },
   "depends": {
     "fabricloader": ">=0.19.5",
     "minecraft": "26.4-alpha.2",
-    "java": ">=25"
-  }
+    "java": ">=25",
+    "fabric-api": "0.161.2+26.4"
+  },
+  "recommends": {}
 }
