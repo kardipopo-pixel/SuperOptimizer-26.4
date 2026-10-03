@@ -12,6 +12,8 @@ public final class SuperOptimizerConfig {
     public boolean asyncPreparation = true;
     public boolean entityCulling = true;
     public boolean blockEntityCulling = false;
+    public boolean disableCullingWithIris = true;
+    public boolean disableCullingWithEntityCullingMod = true;
     public int workerThreads = Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors() / 2));
     public int reservedCores = Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 4));
     public int scanIntervalTicks = 4;
