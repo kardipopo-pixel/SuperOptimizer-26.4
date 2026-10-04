@@ -27,7 +27,7 @@ jobs:
       - name: Verify JAR
         run: |
           set -euo pipefail
-          JAR="build/libs/luxium-fabric-26.3-0.1.0-private.jar"
+          JAR="build/libs/luxium-fabric-26.3-0.1.1-private.jar"
           test -f "$JAR"
           unzip -l "$JAR" | grep -q 'assets/luxiumfabric/post_effect/main.json'
           unzip -l "$JAR" | grep -q 'assets/luxiumfabric/shaders/post/main.fsh'
