@@ -1,0 +1,25 @@
+{
+  "targets": {"bright": {}},
+  "passes": [
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "luxiumfabric:post/bloom_extract",
+      "inputs": [{"sampler_name": "In", "target": "minecraft:main"}],
+      "output": "bright",
+      "uniforms": {"BloomExtractConfig": [{"name": "Threshold", "type": "float", "value": 1.0}]}
+    },
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "luxiumfabric:post/main",
+      "inputs": [{"sampler_name": "Scene", "target": "minecraft:main"},{"sampler_name": "Bloom", "target": "bright"}],
+      "output": "minecraft:main",
+      "uniforms": {"LuxiumConfig": [
+        {"name": "Exposure", "type": "float", "value": 1.03},
+        {"name": "Contrast", "type": "float", "value": 1.02},
+        {"name": "Saturation", "type": "float", "value": 1.03},
+        {"name": "BloomStrength", "type": "float", "value": 0.10},
+        {"name": "Gamma", "type": "float", "value": 1.0}
+      ]}
+    }
+  ]
+}

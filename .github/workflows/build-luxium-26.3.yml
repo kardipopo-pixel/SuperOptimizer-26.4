@@ -1,0 +1,39 @@
+name: Build Luxium Fabric 26.3 Private Port
+
+on:
+  push:
+    branches: [luxium-fabric-26.3-private]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.6'
+      - name: Build
+        run: gradle --no-daemon clean build
+      - name: Verify JAR
+        run: |
+          set -euo pipefail
+          JAR="build/libs/luxium-fabric-26.3-0.1.0-private.jar"
+          test -f "$JAR"
+          unzip -l "$JAR" | grep -q 'assets/luxiumfabric/post_effect/main.json'
+          unzip -l "$JAR" | grep -q 'assets/luxiumfabric/shaders/post/main.fsh'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Luxium-Fabric-26.3-private
+          path: build/libs/*.jar
+          if-no-files-found: error
+          retention-days: 14
