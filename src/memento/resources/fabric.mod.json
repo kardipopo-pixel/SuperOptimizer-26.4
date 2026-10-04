@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "memento",
+  "version": "${version}",
+  "name": "Memento",
+  "description": "Живой архив мира: умные снимки важных моментов, координаты, биомы и история путешествий.",
+  "authors": ["kardipopo-pixel"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.kardipopo.memento.MementoClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "26.4-alpha.2",
+    "java": ">=25",
+    "fabric-api": "0.161.2+26.4"
+  }
+}
