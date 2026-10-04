@@ -1,14 +1,15 @@
 {
   "targets": {
-    "bright": {}
+    "bright": {},
+    "swap": {}
   },
   "passes": [
     {
-      "vertex_shader": "minecraft:core/screenquad",
+      "vertex_shader": "luxiumfabric:post/fullscreen",
       "fragment_shader": "luxiumfabric:post/bloom_extract",
       "inputs": [
         {
-          "sampler_name": "InSampler",
+          "sampler_name": "In",
           "target": "minecraft:main"
         }
       ],
@@ -24,19 +25,19 @@
       }
     },
     {
-      "vertex_shader": "minecraft:core/screenquad",
+      "vertex_shader": "luxiumfabric:post/fullscreen",
       "fragment_shader": "luxiumfabric:post/main",
       "inputs": [
         {
-          "sampler_name": "SceneSampler",
+          "sampler_name": "Scene",
           "target": "minecraft:main"
         },
         {
-          "sampler_name": "BloomSampler",
+          "sampler_name": "Bloom",
           "target": "bright"
         }
       ],
-      "output": "minecraft:main",
+      "output": "swap",
       "uniforms": {
         "LuxiumVisualConfig": [
           {
@@ -71,6 +72,17 @@
           }
         ]
       }
+    },
+    {
+      "vertex_shader": "luxiumfabric:post/fullscreen",
+      "fragment_shader": "luxiumfabric:post/blit",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "swap"
+        }
+      ],
+      "output": "minecraft:main"
     }
   ]
 }
