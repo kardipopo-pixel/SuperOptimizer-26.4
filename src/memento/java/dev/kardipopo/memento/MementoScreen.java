@@ -50,11 +50,11 @@ public final class MementoScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, this.width, this.height, 0xFF080D13);
         graphics.fill(0, 0, 5, this.height, 0xFF6DE7F2);
-        graphics.drawString(this.font, Component.literal("MEMENTO"), 22, 18, 0xFFE9FCFF);
-        graphics.drawString(this.font,
+        graphics.text(this.font, Component.literal("MEMENTO"), 22, 18, 0xFFE9FCFF, true);
+        graphics.text(this.font,
                 Component.literal("Память мира — места и события, которые не хочется забыть."),
                 22, 36, 0xFF8FA6B8);
 
@@ -76,28 +76,28 @@ public final class MementoScreen extends Screen {
             boolean active = index == selected;
             graphics.fill(listX + 4, y + 4, listX + listW - 4, y + rowH - 2,
                     active ? 0xFF1C3942 : 0xFF151F29);
-            graphics.drawString(this.font, Component.literal(r.event()),
-                    listX + 12, y + 9, active ? 0xFFC8FBFF : 0xFFE5EEF3);
-            graphics.drawString(this.font, Component.literal(r.timeText()),
-                    listX + 12, y + 24, 0xFF718493);
-            graphics.drawString(this.font, Component.literal(r.coordsText()),
-                    listX + listW - 105, y + 16, 0xFF8499A9);
+            graphics.text(this.font, Component.literal(r.event()),
+                    listX + 12, y + 9, active ? 0xFFC8FBFF : 0xFFE5EEF3, active);
+            graphics.text(this.font, Component.literal(r.timeText()),
+                    listX + 12, y + 24, 0xFF718493, false);
+            graphics.text(this.font, Component.literal(r.coordsText()),
+                    listX + listW - 105, y + 16, 0xFF8499A9, false);
         }
 
         renderDetails(graphics, listX + listW + 18, listY);
-        super.render(graphics, mouseX, mouseY, partialTick);
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
     private void renderDetails(GuiGraphicsExtractor graphics, int x, int y) {
         int w = this.width - x - 20;
         graphics.fill(x, y, x + w, this.height - 56, 0xFF101821);
 
-        graphics.drawString(this.font, Component.literal("СОСТОЯНИЕ МИРА"),
-                x + 14, y + 14, 0xFF78E8F5);
-        graphics.drawString(this.font,
+        graphics.text(this.font, Component.literal("СОСТОЯНИЕ МИРА"),
+                x + 14, y + 14, 0xFF78E8F5, true);
+        graphics.text(this.font,
                 Component.literal("Настроение: " + MemoryEngine.mood(Minecraft.getInstance())),
                 x + 14, y + 34, 0xFFDDEBF1);
-        graphics.drawString(this.font,
+        graphics.text(this.font,
                 Component.literal(MemoryEngine.currentContext(Minecraft.getInstance())),
                 x + 14, y + 52, 0xFF8EA6B5);
 
@@ -105,46 +105,46 @@ public final class MementoScreen extends Screen {
         long biomes = all.stream().map(MemoryRecord::biome).distinct().count();
         long dimensions = all.stream().map(MemoryRecord::dimension).distinct().count();
 
-        graphics.drawString(this.font, Component.literal("Воспоминаний: " + all.size()),
-                x + 14, y + 78, 0xFF8EA6B5);
-        graphics.drawString(this.font, Component.literal("Биомов замечено: " + biomes),
-                x + 14, y + 96, 0xFF8EA6B5);
-        graphics.drawString(this.font, Component.literal("Измерений: " + dimensions),
-                x + 14, y + 114, 0xFF8EA6B5);
-        graphics.drawString(this.font, Component.literal("Автомоменты: " +
+        graphics.text(this.font, Component.literal("Воспоминаний: " + all.size()),
+                x + 14, y + 78, 0xFF8EA6B5, false);
+        graphics.text(this.font, Component.literal("Биомов замечено: " + biomes),
+                x + 14, y + 96, 0xFF8EA6B5, false);
+        graphics.text(this.font, Component.literal("Измерений: " + dimensions),
+                x + 14, y + 114, 0xFF8EA6B5, false);
+        graphics.text(this.font, Component.literal("Автомоменты: " +
                 (MemoryEngine.isArmed() ? "активны" : "пауза")),
-                x + 14, y + 132, 0xFF8EA6B5);
+                x + 14, y + 132, 0xFF8EA6B5, false);
 
         MemoryRecord selectedRecord = selected >= 0 && selected < records.size()
                 ? records.get(selected) : MemoryEngine.latest();
 
         int dy = y + 168;
-        graphics.drawString(this.font, Component.literal("ПОСЛЕДНЕЕ ВОСПОМИНАНИЕ"),
-                x + 14, dy, 0xFF78E8F5);
+        graphics.text(this.font, Component.literal("ПОСЛЕДНЕЕ ВОСПОМИНАНИЕ"),
+                x + 14, dy, 0xFF78E8F5, true);
 
         if (selectedRecord == null) {
-            graphics.drawString(this.font, Component.literal("Архив пока пуст."),
-                    x + 14, dy + 24, 0xFF788C9A);
+            graphics.text(this.font, Component.literal("Архив пока пуст."),
+                    x + 14, dy + 24, 0xFF788C9A, false);
             return;
         }
 
-        graphics.drawString(this.font, Component.literal(selectedRecord.event()),
-                x + 14, dy + 24, 0xFFEFFBFF);
-        graphics.drawString(this.font, Component.literal(selectedRecord.timeText()),
-                x + 14, dy + 42, 0xFF91A8B6);
-        graphics.drawString(this.font, Component.literal("Мир: " + selectedRecord.world()),
-                x + 14, dy + 60, 0xFF91A8B6);
-        graphics.drawString(this.font, Component.literal("Измерение: " + selectedRecord.dimension()),
-                x + 14, dy + 78, 0xFF91A8B6);
-        graphics.drawString(this.font, Component.literal("Биом: " + selectedRecord.biome()),
-                x + 14, dy + 96, 0xFF91A8B6);
-        graphics.drawString(this.font, Component.literal("Координаты: " + selectedRecord.coordsText()),
-                x + 14, dy + 114, 0xFF91A8B6);
-        graphics.drawString(this.font, Component.literal(String.format(
+        graphics.text(this.font, Component.literal(selectedRecord.event()),
+                x + 14, dy + 24, 0xFFEFFBFF, true);
+        graphics.text(this.font, Component.literal(selectedRecord.timeText()),
+                x + 14, dy + 42, 0xFF91A8B6, false);
+        graphics.text(this.font, Component.literal("Мир: " + selectedRecord.world()),
+                x + 14, dy + 60, 0xFF91A8B6, false);
+        graphics.text(this.font, Component.literal("Измерение: " + selectedRecord.dimension()),
+                x + 14, dy + 78, 0xFF91A8B6, false);
+        graphics.text(this.font, Component.literal("Биом: " + selectedRecord.biome()),
+                x + 14, dy + 96, 0xFF91A8B6, false);
+        graphics.text(this.font, Component.literal("Координаты: " + selectedRecord.coordsText()),
+                x + 14, dy + 114, 0xFF91A8B6, false);
+        graphics.text(this.font, Component.literal(String.format(
                         java.util.Locale.ROOT, "Здоровье: %.1f", selectedRecord.health())),
-                x + 14, dy + 132, 0xFF91A8B6);
-        graphics.drawString(this.font, Component.literal("Снимок: " + selectedRecord.screenshot()),
-                x + 14, dy + 150, 0xFF91A8B6);
+                x + 14, dy + 132, 0xFF91A8B6, false);
+        graphics.text(this.font, Component.literal("Снимок: " + selectedRecord.screenshot()),
+                x + 14, dy + 150, 0xFF91A8B6, false);
     }
 
     @Override
