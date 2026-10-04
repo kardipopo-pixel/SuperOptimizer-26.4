@@ -2,6 +2,7 @@ package dev.kardipopo.memento;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -153,11 +154,13 @@ public final class MementoScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (event.button() == 0) {
             int listW = Math.max(350, this.width / 2 - 30);
             int rowH = 42;
             int visible = Math.max(1, (this.height - 124) / rowH);
+            double mouseX = event.x();
+            double mouseY = event.y();
             if (mouseX >= 20 && mouseX < 20 + listW &&
                     mouseY >= 64 && mouseY < this.height - 56) {
                 int index = (int)((mouseY - 64) / rowH) + scroll;
@@ -167,15 +170,18 @@ public final class MementoScreen extends Screen {
                 }
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        scroll -= (int)Math.signum(delta);
-        int visible = Math.max(1, (this.height - 124) / 42);
-        scroll = Math.max(0, Math.min(scroll, Math.max(0, records.size() - visible)));
-        return true;
+    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if (mouseY >= 64 && mouseY < this.height - 56) {
+            scroll -= (int)Math.signum(verticalAmount);
+            int visible = Math.max(1, (this.height - 124) / 42);
+            scroll = Math.max(0, Math.min(scroll, Math.max(0, records.size() - visible)));
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
 
     @Override
