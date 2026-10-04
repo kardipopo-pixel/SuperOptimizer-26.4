@@ -45,7 +45,7 @@ public final class MemoryEngine {
         String dim = level.dimension().identifier().toString();
         String currentBiome = level.getBiome(player.blockPosition())
                 .unwrapKey()
-                .map(key -> key.location().toString())
+                .map(key -> key.identifier().toString())
                 .orElse("minecraft:unknown");
         long now = System.currentTimeMillis();
 
@@ -124,9 +124,9 @@ public final class MemoryEngine {
         long id = MemoryStore.nextId();
         String stamp = Instant.ofEpochMilli(now).toString().replaceAll("[^0-9]", "");
         String filename = id + "_" + stamp + ".png";
-        String worldName = mc.getCurrentServer() != null ? mc.getCurrentServer().name() : "singleplayer";
+        String worldName = mc.getCurrentServer() != null ? mc.getCurrentServer().name : "singleplayer";
         String bio = level.getBiome(p.blockPosition()).unwrapKey()
-                .map(key -> key.location().toString()).orElse("minecraft:unknown");
+                .map(key -> key.identifier().toString()).orElse("minecraft:unknown");
         String dim = level.dimension().identifier().toString();
 
         MemoryRecord record = new MemoryRecord(
@@ -152,14 +152,14 @@ public final class MemoryEngine {
         }
     }
 
-    public static MemoryRecord latest() {
+    private static void notifyPlayer(String message) {\n        MementoClient.notifyPlayer(message);\n    }\n\n    public static MemoryRecord latest() {
         return MemoryStore.all().stream().findFirst().orElse(null);
     }
 
     public static String currentContext(Minecraft mc) {
         if (mc.player == null || mc.level == null) return "Нет мира";
         String b = mc.level.getBiome(mc.player.blockPosition()).unwrapKey()
-                .map(k -> k.location().getPath()).orElse("unknown");
+                .map(k -> k.identifier().getPath()).orElse("unknown");
         return String.format(Locale.ROOT, "%s • %s • %.0f, %.0f, %.0f",
                 mc.level.dimension().identifier(), b,
                 mc.player.getX(), mc.player.getY(), mc.player.getZ());
@@ -170,7 +170,7 @@ public final class MemoryEngine {
         if (mc.player.getHealth() <= 4) return "ОПАСНОСТЬ";
         if (mc.level.isThundering()) return "ГРОЗА";
         if (mc.level.isRaining()) return "ДОЖДЬ";
-        long time = mc.level.getDayTime() % 24000L;
+        long time = mc.level.getGameTime() % 24000L;
         if (time >= 13000 && time <= 23000) return "НОЧЬ";
         return "СПОКОЙНО";
     }
