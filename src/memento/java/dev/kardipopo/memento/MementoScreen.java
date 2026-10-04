@@ -51,14 +51,18 @@ public final class MementoScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+
         graphics.fill(0, 0, this.width, this.height, 0xFF080D13);
         graphics.fill(0, 0, 5, this.height, 0xFF6DE7F2);
+
         graphics.text(this.font, Component.literal("MEMENTO"), 22, 18, 0xFFE9FCFF, true);
         graphics.text(this.font,
                 Component.literal("Память мира — места и события, которые не хочется забыть."),
-                22, 36, 0xFF8FA6B8);
+                22, 36, 0xFF8FA6B8, false);
 
-        int listX = 20, listY = 64;
+        int listX = 20;
+        int listY = 64;
         int listW = Math.max(350, this.width / 2 - 30);
         int rowH = 42;
         int visible = Math.max(1, (this.height - 124) / rowH);
@@ -74,10 +78,12 @@ public final class MementoScreen extends Screen {
             MemoryRecord r = records.get(index);
             int y = listY + i * rowH;
             boolean active = index == selected;
+
             graphics.fill(listX + 4, y + 4, listX + listW - 4, y + rowH - 2,
                     active ? 0xFF1C3942 : 0xFF151F29);
             graphics.text(this.font, Component.literal(r.event()),
-                    listX + 12, y + 9, active ? 0xFFC8FBFF : 0xFFE5EEF3, active);
+                    listX + 12, y + 9,
+                    active ? 0xFFC8FBFF : 0xFFE5EEF3, active);
             graphics.text(this.font, Component.literal(r.timeText()),
                     listX + 12, y + 24, 0xFF718493, false);
             graphics.text(this.font, Component.literal(r.coordsText()),
@@ -85,21 +91,20 @@ public final class MementoScreen extends Screen {
         }
 
         renderDetails(graphics, listX + listW + 18, listY);
-        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
     private void renderDetails(GuiGraphicsExtractor graphics, int x, int y) {
-        int w = this.width - x - 20;
+        int w = Math.max(200, this.width - x - 20);
         graphics.fill(x, y, x + w, this.height - 56, 0xFF101821);
 
         graphics.text(this.font, Component.literal("СОСТОЯНИЕ МИРА"),
                 x + 14, y + 14, 0xFF78E8F5, true);
         graphics.text(this.font,
                 Component.literal("Настроение: " + MemoryEngine.mood(Minecraft.getInstance())),
-                x + 14, y + 34, 0xFFDDEBF1);
+                x + 14, y + 34, 0xFFDDEBF1, false);
         graphics.text(this.font,
                 Component.literal(MemoryEngine.currentContext(Minecraft.getInstance())),
-                x + 14, y + 52, 0xFF8EA6B5);
+                x + 14, y + 52, 0xFF8EA6B5, false);
 
         List<MemoryRecord> all = MemoryStore.all();
         long biomes = all.stream().map(MemoryRecord::biome).distinct().count();
@@ -112,11 +117,11 @@ public final class MementoScreen extends Screen {
         graphics.text(this.font, Component.literal("Измерений: " + dimensions),
                 x + 14, y + 114, 0xFF8EA6B5, false);
         graphics.text(this.font, Component.literal("Автомоменты: " +
-                (MemoryEngine.isArmed() ? "активны" : "пауза")),
+                        (MemoryEngine.isArmed() ? "активны" : "пауза")),
                 x + 14, y + 132, 0xFF8EA6B5, false);
 
-        MemoryRecord selectedRecord = selected >= 0 && selected < records.size()
-                ? records.get(selected) : MemoryEngine.latest();
+        MemoryRecord selectedRecord = selected >= 0 && selected < all.size()
+                ? all.get(selected) : MemoryEngine.latest();
 
         int dy = y + 168;
         graphics.text(this.font, Component.literal("ПОСЛЕДНЕЕ ВОСПОМИНАНИЕ"),
