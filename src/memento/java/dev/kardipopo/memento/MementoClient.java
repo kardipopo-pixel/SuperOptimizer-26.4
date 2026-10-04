@@ -60,7 +60,7 @@ public final class MementoClient implements ClientModInitializer {
     public static void notifyPlayer(String message) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
-            mc.gui.setOverlayMessage(Component.literal("§bMemento §8» §f" + message), false);
+            mc.gui.hud.setOverlayMessage(Component.literal("§bMemento §8» §f" + message), false);
         }
     }
 
