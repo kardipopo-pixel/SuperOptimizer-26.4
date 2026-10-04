@@ -1,8 +1,8 @@
-name: Build SuperOptimizer
+name: Build Memento
 
 on:
   push:
-    branches: [ main ]
+    branches: [ surprise-autotuner ]
   pull_request:
   workflow_dispatch:
 
@@ -24,48 +24,21 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.7.1'
-      - name: Build with real Fabric/Minecraft dependencies
+      - name: Build
         run: gradle --no-daemon clean build
-      - name: Probe 26.4 UI APIs
+      - name: Verify Memento jar
         shell: bash
         run: |
           set -euo pipefail
-          JAR="$(python scripts/find_minecraft_client_jar.py)"
-          echo "== Button =="
-          javap -classpath "$JAR" -p net.minecraft.client.gui.components.Button
-          echo "== Tooltip =="
-          javap -classpath "$JAR" -p net.minecraft.client.gui.components.Tooltip
-          echo "== AbstractWidget =="
-          javap -classpath "$JAR" -p net.minecraft.client.gui.components.AbstractWidget
-          echo "== Minecraft =="
-          javap -classpath "$JAR" -p net.minecraft.client.Minecraft | grep -E ' screen\(| setScreen|gui\(' || true
-          echo "== KeyMapping/InputConstants =="
-          javap -classpath "$JAR" -p net.minecraft.client.KeyMapping
-          javap -classpath "$JAR" -p com.mojang.blaze3d.platform.InputConstants\$Type
-
-      - name: Verify 26.4 API and production JAR
-        shell: bash
-        run: |
-          set -euo pipefail
-          JAR="$(python scripts/find_minecraft_client_jar.py)"
-
-          javap -classpath "$JAR" -p net.minecraft.client.renderer.LevelRenderer |
-            grep -q 'submitEntities'
-          javap -classpath "$JAR" -p net.minecraft.client.renderer.LevelRenderer |
-            grep -q 'submitBlockEntities'
-          javap -classpath "$JAR" -p net.minecraft.client.renderer.entity.EntityRenderDispatcher |
-            grep -q 'submit'
-          javap -classpath "$JAR" -p 'net.minecraft.client.renderer.chunk.SectionRenderDispatcher$RenderSection' |
-            grep -q 'getRenderOrigin'
-          javap -classpath "$JAR" -p net.minecraft.client.renderer.SectionOcclusionGraph |
-            grep -q 'expectedChunks'
-
-          python scripts/verify_production_jar.py
-
-      - name: Upload mod JAR
+          JAR="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' | head -1)"
+          test -n "$JAR"
+          jar tf "$JAR" | grep -q 'fabric.mod.json'
+          jar tf "$JAR" | grep -q 'dev/kardipopo/memento/MementoClient.class'
+          unzip -p "$JAR" fabric.mod.json | grep -q '"id": "memento"'
+      - name: Upload Memento jar
         uses: actions/upload-artifact@v4
         with:
-          name: SuperOptimizer-26.4-${{ github.sha }}
+          name: Memento-26.4-${{ github.sha }}
           path: build/libs/*.jar
           if-no-files-found: error
           retention-days: 14
