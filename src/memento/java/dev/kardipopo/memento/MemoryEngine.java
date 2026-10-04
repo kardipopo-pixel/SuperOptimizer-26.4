@@ -138,7 +138,7 @@ public final class MemoryEngine {
         try {
             Path gameDir = mc.gameDirectory.toPath();
             Screenshot.grab(
-                    gameDir,
+                    gameDir.toFile(),
                     "memento/memories/" + filename,
                     mc.gameRenderer.mainRenderTarget(),
                     1,
