@@ -152,7 +152,11 @@ public final class MemoryEngine {
         }
     }
 
-    private static void notifyPlayer(String message) {\n        MementoClient.notifyPlayer(message);\n    }\n\n    public static MemoryRecord latest() {
+    private static void notifyPlayer(String message) {
+        MementoClient.notifyPlayer(message);
+    }
+
+    public static MemoryRecord latest() {
         return MemoryStore.all().stream().findFirst().orElse(null);
     }
 
