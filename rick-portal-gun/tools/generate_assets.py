@@ -99,7 +99,7 @@ def sound(path, mode):
         frames += struct.pack("<h", int(s*32767))
     with tempfile.NamedTemporaryFile(suffix=".wav",delete=False) as tmp:
         wav = Path(tmp.name)
-    with wave.open(wav,"wb") as wf:
+    with wave.open(str(wav),"wb") as wf:
         wf.setnchannels(1)
         wf.setsampwidth(2)
         wf.setframerate(rate)
