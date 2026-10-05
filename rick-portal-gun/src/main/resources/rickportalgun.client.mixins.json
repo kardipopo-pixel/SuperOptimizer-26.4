@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "dev.kardipopo.rickportalgun.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["HeldItemRendererMixin"],
+  "injectors": {"defaultRequire": 1}
+}

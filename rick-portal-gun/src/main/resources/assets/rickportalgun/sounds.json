@@ -1,0 +1,5 @@
+{
+  "portal_create": {"sounds":[{"name":"rickportalgun:portal_create","volume":1.0,"pitch":1.0}]},
+  "portal_remove": {"sounds":[{"name":"rickportalgun:portal_remove","volume":1.0,"pitch":1.0}]},
+  "gun_draw": {"sounds":[{"name":"rickportalgun:gun_draw","volume":0.8,"pitch":1.0}]}
+}

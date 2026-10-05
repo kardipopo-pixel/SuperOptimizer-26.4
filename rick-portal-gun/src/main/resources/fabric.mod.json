@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "rickportalgun",
+  "version": "${version}",
+  "name": "Rick's Portal Gun",
+  "description": "Fan-made green portal gun inspired by the C-137 design, for Minecraft 1.21.11 Fabric.",
+  "authors": ["Kardi"],
+  "contact": {"homepage": "https://github.com/kardipopo-pixel/SuperOptimizer-26.4"},
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["dev.kardipopo.rickportalgun.RickPortalGun"],
+    "client": ["dev.kardipopo.rickportalgun.client.RickPortalGunClient"]
+  },
+  "mixins": ["rickportalgun.client.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.18.0",
+    "minecraft": "1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

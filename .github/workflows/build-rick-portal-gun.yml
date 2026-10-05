@@ -1,0 +1,32 @@
+name: Build Rick Portal Gun 1.21.11
+
+on:
+  push:
+    branches:
+      - rick-portal-gun-1.21.11
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.3.0"
+      - name: Generate assets
+        working-directory: rick-portal-gun
+        run: python3 tools/generate_assets.py
+      - name: Build
+        working-directory: rick-portal-gun
+        run: gradle build --no-daemon
+      - name: Upload mod JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: rick-portal-gun-1.21.11
+          path: rick-portal-gun/build/libs/rick-portal-gun-*.jar
+          if-no-files-found: error
