@@ -64,7 +64,6 @@ public final class PortalGunItem extends Item {
         char side = existing.isEmpty() ? 'A' : 'B';
         stand.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0.0f, 0.0f);
         stand.setInvisible(true);
-        stand.setSmall(true);
         stand.setInvulnerable(true);
         stand.setNoGravity(true);
         stand.setCustomNameVisible(false);
