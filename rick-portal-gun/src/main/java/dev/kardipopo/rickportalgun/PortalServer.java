@@ -47,7 +47,6 @@ public final class PortalServer {
 
         player.setPosition(x, y, z);
         player.setVelocity(0.0, 0.0, 0.0);
-        player.setFallDistance(0.0f);
         COOLDOWNS.put(player.getUuid(), 12);
 
         world.playSound(null, x, y, z,

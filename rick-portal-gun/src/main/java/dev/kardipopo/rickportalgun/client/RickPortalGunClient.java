@@ -7,7 +7,6 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.sound.SoundCategory;
 
 public final class RickPortalGunClient implements ClientModInitializer {
     private static boolean holding = false;
@@ -30,7 +29,7 @@ public final class RickPortalGunClient implements ClientModInitializer {
         ItemStack stack = player.getMainHandStack();
         boolean nowHolding = stack.isOf(ModItems.PORTAL_GUN);
         if (nowHolding && !holding) {
-            player.playSound(ModSounds.GUN_DRAW, SoundCategory.PLAYERS, 0.72f, 1.0f);
+            player.playSound(ModSounds.GUN_DRAW, 0.72f, 1.0f);
         }
         holding = nowHolding;
     }

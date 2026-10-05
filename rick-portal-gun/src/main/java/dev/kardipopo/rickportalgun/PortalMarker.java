@@ -25,7 +25,8 @@ public record PortalMarker(UUID owner, char side, Direction normal, Vec3d target
         try {
             UUID owner = UUID.fromString(parts[1]);
             char side = parts[2].charAt(0);
-            Direction normal = Direction.byId(Integer.parseInt(parts[3]));
+            Direction normal = Direction.byId(parts[3]);
+
             Vec3d target = null;
             if (parts.length >= 7 && !parts[4].equals("NA")) {
                 target = new Vec3d(

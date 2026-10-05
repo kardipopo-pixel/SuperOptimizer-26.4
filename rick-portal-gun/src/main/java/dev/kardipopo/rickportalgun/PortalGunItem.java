@@ -1,6 +1,7 @@
 package dev.kardipopo.rickportalgun;
 
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -57,14 +58,15 @@ public final class PortalGunItem extends Item {
         Direction normal = blockHit.getSide();
         Vec3d pos = blockHit.getPos().add(Vec3d.of(normal.getVector()).multiply(0.02));
 
-        ArmorStandEntity stand = EntityType.ARMOR_STAND.create(serverWorld);
+        ArmorStandEntity stand = EntityType.ARMOR_STAND.create(serverWorld, SpawnReason.TRIGGERED);
         if (stand == null) return ActionResult.FAIL;
 
         char side = existing.isEmpty() ? 'A' : 'B';
         stand.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0.0f, 0.0f);
         stand.setInvisible(true);
-        stand.setMarker(true);
-        stand.setNoBasePlate(true);
+        stand.setSmall(true);
+        stand.setInvulnerable(true);
+        stand.setNoGravity(true);
         stand.setCustomNameVisible(false);
         stand.setCustomName(new PortalMarker(owner, side, normal, null).encode());
         serverWorld.spawnEntity(stand);
@@ -73,9 +75,10 @@ public final class PortalGunItem extends Item {
             ArmorStandEntity first = existing.get(0);
             PortalMarker firstData = PortalMarker.read(first);
             if (firstData != null) {
+                Vec3d firstPos = new Vec3d(first.getX(), first.getY(), first.getZ());
                 first.setCustomName(new PortalMarker(firstData.owner(), firstData.side(), firstData.normal(), pos).encode());
+                stand.setCustomName(new PortalMarker(owner, 'B', normal, firstPos).encode());
             }
-            stand.setCustomName(new PortalMarker(owner, 'B', normal, first.getPos()).encode());
         }
 
         world.playSound(null, pos.x, pos.y, pos.z,

@@ -3,6 +3,7 @@ package dev.kardipopo.rickportalgun.client;
 import dev.kardipopo.rickportalgun.PortalMarker;
 import dev.kardipopo.rickportalgun.RickPortalGun;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderLayers;
@@ -26,7 +27,7 @@ public final class PortalVisualRenderer {
         WorldRenderEvents.AFTER_ENTITIES.register(PortalVisualRenderer::render);
     }
 
-    private static void render(net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext context) {
+    private static void render(WorldRenderContext context) {
         if (context.world() == null || context.matrices() == null || context.camera() == null) return;
 
         Vec3d cameraPos = context.camera().getPos();
@@ -51,23 +52,22 @@ public final class PortalVisualRenderer {
                 right = normal.crossProduct(up).normalize();
             }
 
-            Vec3d center = stand.getPos().add(normal.multiply(0.03));
+            Vec3d center = new Vec3d(stand.getX(), stand.getY(), stand.getZ()).add(normal.multiply(0.03));
             float phase = RickPortalGunClient.time(context.tickDelta()) + stand.getId() * 0.41f;
             submitPortal(context, cameraPos, center, right, up, phase);
         }
     }
 
-    private static void submitPortal(net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext context,
+    private static void submitPortal(WorldRenderContext context,
                                      Vec3d cameraPos, Vec3d center, Vec3d right, Vec3d up, float phase) {
         MatrixStack matrices = context.matrices();
         matrices.push();
         matrices.translate(center.x - cameraPos.x, center.y - cameraPos.y, center.z - cameraPos.z);
 
         context.submitNodeCollector().submitCustomGeometry(matrices, LAYER, (pose, consumer) -> {
-            MatrixStack.Entry entry = pose;
-            quad(consumer, entry, Vec3d.ZERO, right, up, 0.52, 0.78, 0.95f, phase);
-            quad(consumer, entry, Vec3d.ZERO, right, up, 0.58, 0.86, 0.52f, -phase * 1.27f);
-            quad(consumer, entry, Vec3d.ZERO, right, up, 0.46, 0.70, 0.30f, phase * 0.67f);
+            quad(consumer, pose, Vec3d.ZERO, right, up, 0.52, 0.78, 0.95f, phase);
+            quad(consumer, pose, Vec3d.ZERO, right, up, 0.58, 0.86, 0.52f, -phase * 1.27f);
+            quad(consumer, pose, Vec3d.ZERO, right, up, 0.46, 0.70, 0.30f, phase * 0.67f);
         });
 
         matrices.pop();

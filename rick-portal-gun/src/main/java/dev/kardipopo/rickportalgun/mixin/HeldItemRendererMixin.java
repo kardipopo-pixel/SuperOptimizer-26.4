@@ -2,8 +2,8 @@ package dev.kardipopo.rickportalgun.mixin;
 
 import dev.kardipopo.rickportalgun.ModItems;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
+import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.item.HeldItemRenderer;
-import net.minecraft.client.render.item.ItemRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Hand;
@@ -18,7 +18,7 @@ public abstract class HeldItemRendererMixin {
     @Inject(method = "renderFirstPersonItem", at = @At("HEAD"))
     private void rpg$push(AbstractClientPlayerEntity player, float tickProgress, float pitch,
                            Hand hand, float swingProgress, ItemStack itemStack, float equipProgress,
-                           MatrixStack matrices, ItemRenderState renderState, int light,
+                           MatrixStack matrices, OrderedRenderCommandQueue orderedRenderCommandQueue, int light,
                            CallbackInfo ci) {
         if (!itemStack.isOf(ModItems.PORTAL_GUN)) return;
 
@@ -38,7 +38,7 @@ public abstract class HeldItemRendererMixin {
     @Inject(method = "renderFirstPersonItem", at = @At("RETURN"))
     private void rpg$pop(AbstractClientPlayerEntity player, float tickProgress, float pitch,
                           Hand hand, float swingProgress, ItemStack itemStack, float equipProgress,
-                          MatrixStack matrices, ItemRenderState renderState, int light,
+                          MatrixStack matrices, OrderedRenderCommandQueue orderedRenderCommandQueue, int light,
                           CallbackInfo ci) {
         if (itemStack.isOf(ModItems.PORTAL_GUN)) matrices.pop();
     }
