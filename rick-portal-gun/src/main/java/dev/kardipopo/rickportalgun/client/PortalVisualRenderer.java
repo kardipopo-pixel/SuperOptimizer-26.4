@@ -4,6 +4,7 @@ import dev.kardipopo.rickportalgun.PortalMarker;
 import dev.kardipopo.rickportalgun.RickPortalGun;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderLayers;
@@ -28,17 +29,18 @@ public final class PortalVisualRenderer {
     }
 
     private static void render(WorldRenderContext context) {
-        if (context.world() == null || context.matrices() == null || context.camera() == null) return;
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client.world == null) return;
 
-        Vec3d cameraPos = context.camera().getPos();
+        Vec3d cameraPos = client.gameRenderer.getCamera().getPos();
         Box area = new Box(
                 cameraPos.x - 96.0, cameraPos.y - 96.0, cameraPos.z - 96.0,
                 cameraPos.x + 96.0, cameraPos.y + 96.0, cameraPos.z + 96.0
         );
 
-        float tickDelta = context.tickCounter().getTickProgress(false);
+        float tickDelta = client.getRenderTickCounter().getTickProgress(false);
 
-        for (ArmorStandEntity stand : context.world().getEntitiesByType(
+        for (ArmorStandEntity stand : client.world.getEntitiesByType(
                 EntityType.ARMOR_STAND, area, PortalMarker::is)) {
             PortalMarker marker = PortalMarker.read(stand);
             if (marker == null) continue;
@@ -66,7 +68,7 @@ public final class PortalVisualRenderer {
         matrices.push();
         matrices.translate(center.x - cameraPos.x, center.y - cameraPos.y, center.z - cameraPos.z);
 
-        context.commandQueue().submitCustomGeometry(matrices, LAYER, (pose, consumer) -> {
+        context.commandQueue().submitCustom(matrices, LAYER, (pose, consumer) -> {
             quad(consumer, pose, Vec3d.ZERO, right, up, 0.52, 0.78, 0.95f, phase);
             quad(consumer, pose, Vec3d.ZERO, right, up, 0.58, 0.86, 0.52f, -phase * 1.27f);
             quad(consumer, pose, Vec3d.ZERO, right, up, 0.46, 0.70, 0.30f, phase * 0.67f);
