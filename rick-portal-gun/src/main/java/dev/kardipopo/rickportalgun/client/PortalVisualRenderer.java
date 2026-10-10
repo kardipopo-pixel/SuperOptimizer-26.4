@@ -32,7 +32,7 @@ public final class PortalVisualRenderer {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.world == null) return;
 
-        Vec3d cameraPos = client.gameRenderer.getCamera().getPos();
+        Vec3d cameraPos = context.gameRenderer().getCamera().getPos();
         Box area = new Box(
                 cameraPos.x - 96.0, cameraPos.y - 96.0, cameraPos.z - 96.0,
                 cameraPos.x + 96.0, cameraPos.y + 96.0, cameraPos.z + 96.0
