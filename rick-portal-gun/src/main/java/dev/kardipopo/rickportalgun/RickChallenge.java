@@ -1,6 +1,7 @@
 package dev.kardipopo.rickportalgun;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerInventory;
@@ -29,6 +30,12 @@ public final class RickChallenge {
 
     public static void initialize() {
         ServerTickEvents.END_WORLD_TICK.register(RickChallenge::tick);
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            for (ActiveChallenge challenge : ACTIVE.values()) {
+                restore(challenge.world, challenge);
+            }
+            ACTIVE.clear();
+        });
     }
 
     public static boolean hasPortalGun(ServerPlayerEntity player) {
