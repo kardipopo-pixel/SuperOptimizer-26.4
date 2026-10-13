@@ -85,7 +85,7 @@ def display(x,y,w,h):
                 py = 5 + gy*scale
                 if bit == "1" and px <= x < px+scale and py <= y < py+scale:
                     out = [255,220,80,255]
-        cursor += 7
+        cursor += 6
     return bytes(out)
 
 write_png(MISC/"portal_green.png", 96, 128, portal)
