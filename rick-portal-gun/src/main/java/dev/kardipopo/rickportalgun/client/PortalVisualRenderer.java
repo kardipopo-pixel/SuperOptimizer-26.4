@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.LightmapTextureManager;
+import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.VertexConsumer;
@@ -30,15 +31,16 @@ public final class PortalVisualRenderer {
 
     private static void render(WorldRenderContext context) {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.world == null) return;
+        if (client.world == null || context.matrices() == null || context.consumers() == null) return;
 
         Vec3d cameraPos = context.gameRenderer().getCamera().getCameraPos();
         Box area = new Box(
                 cameraPos.x - 96.0, cameraPos.y - 96.0, cameraPos.z - 96.0,
                 cameraPos.x + 96.0, cameraPos.y + 96.0, cameraPos.z + 96.0
         );
-
         float tickDelta = client.getRenderTickCounter().getTickProgress(false);
+        MatrixStack matrices = context.matrices();
+        VertexConsumer consumer = context.consumers().getBuffer(LAYER);
 
         for (ArmorStandEntity stand : client.world.getEntitiesByType(
                 EntityType.ARMOR_STAND, area, PortalMarker::is)) {
@@ -56,30 +58,22 @@ public final class PortalVisualRenderer {
                 right = normal.crossProduct(up).normalize();
             }
 
-            Vec3d center = new Vec3d(stand.getX(), stand.getY(), stand.getZ()).add(normal.multiply(0.03));
+            Vec3d center = new Vec3d(stand.getX(), stand.getY(), stand.getZ()).add(normal.multiply(0.01));
             float phase = RickPortalGunClient.time(stand.age + tickDelta) + stand.getId() * 0.41f;
-            submitPortal(context, cameraPos, center, right, up, phase);
+
+            matrices.push();
+            matrices.translate(center.x - cameraPos.x, center.y - cameraPos.y, center.z - cameraPos.z);
+            MatrixStack.Entry pose = matrices.peek();
+            quad(consumer, pose, Vec3d.ZERO.add(normal.multiply(0.002)), right, up, normal, 0.52, 0.78, 0.93f, phase);
+            quad(consumer, pose, Vec3d.ZERO.add(normal.multiply(0.004)), right, up, normal, 0.48, 0.73, 0.48f, -phase * 1.27f);
+            quad(consumer, pose, Vec3d.ZERO.add(normal.multiply(0.006)), right, up, normal, 0.43, 0.66, 0.29f, phase * 0.67f);
+            matrices.pop();
         }
     }
 
-    private static void submitPortal(WorldRenderContext context, Vec3d cameraPos, Vec3d center,
-                                     Vec3d right, Vec3d up, float phase) {
-        MatrixStack matrices = context.matrices();
-        matrices.push();
-        matrices.translate(center.x - cameraPos.x, center.y - cameraPos.y, center.z - cameraPos.z);
-
-        context.commandQueue().submitCustom(matrices, LAYER, (pose, consumer) -> {
-            quad(consumer, pose, Vec3d.ZERO, right, up, 0.52, 0.78, 0.95f, phase);
-            quad(consumer, pose, Vec3d.ZERO, right, up, 0.58, 0.86, 0.52f, -phase * 1.27f);
-            quad(consumer, pose, Vec3d.ZERO, right, up, 0.46, 0.70, 0.30f, phase * 0.67f);
-        });
-
-        matrices.pop();
-    }
-
     private static void quad(VertexConsumer consumer, MatrixStack.Entry pose, Vec3d center,
-                             Vec3d right, Vec3d up, double halfW, double halfH,
-                             float alpha, double rotation) {
+                             Vec3d right, Vec3d up, Vec3d normal,
+                             double halfW, double halfH, float alpha, double rotation) {
         Vec3d r = rotate(right, up, rotation);
         Vec3d u = rotate(up, right, -rotation);
         Vec3d p1 = center.add(r.multiply(-halfW)).add(u.multiply(-halfH));
@@ -87,10 +81,10 @@ public final class PortalVisualRenderer {
         Vec3d p3 = center.add(r.multiply(halfW)).add(u.multiply(halfH));
         Vec3d p4 = center.add(r.multiply(-halfW)).add(u.multiply(halfH));
 
-        vertex(consumer, pose, p1, 0, 1, alpha);
-        vertex(consumer, pose, p2, 1, 1, alpha);
-        vertex(consumer, pose, p3, 1, 0, alpha);
-        vertex(consumer, pose, p4, 0, 0, alpha);
+        vertex(consumer, pose, p1, 0, 1, alpha, normal);
+        vertex(consumer, pose, p2, 1, 1, alpha, normal);
+        vertex(consumer, pose, p3, 1, 0, alpha, normal);
+        vertex(consumer, pose, p4, 0, 0, alpha, normal);
     }
 
     private static Vec3d rotate(Vec3d a, Vec3d b, double angle) {
@@ -100,10 +94,12 @@ public final class PortalVisualRenderer {
     }
 
     private static void vertex(VertexConsumer consumer, MatrixStack.Entry pose,
-                               Vec3d pos, float u, float v, float alpha) {
+                               Vec3d pos, float u, float v, float alpha, Vec3d normal) {
         consumer.vertex(pose, (float) pos.x, (float) pos.y, (float) pos.z)
                 .color(190, 255, 210, Math.round(255.0f * alpha))
                 .texture(u, v)
-                .light(LightmapTextureManager.MAX_LIGHT_COORDINATE);
+                .overlay(OverlayTexture.DEFAULT_UV)
+                .light(LightmapTextureManager.MAX_LIGHT_COORDINATE)
+                .normal(pose, (float) normal.x, (float) normal.y, (float) normal.z);
     }
 }

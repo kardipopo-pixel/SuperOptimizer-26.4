@@ -1,4 +1,6 @@
 {
   "item.rickportalgun.portal_gun": "Портальная пушка C-137",
-  "message.rickportalgun.already_two": "У тебя уже установлены два портала. Shift + ПКМ — убрать их."
+  "message.rickportalgun.already_two": "У тебя уже установлены два портала. Shift + ПКМ — убрать их.",
+  "key.category.rickportalgun": "Портальная пушка C-137",
+  "key.rickportalgun.open_settings": "Настройки портальной пушки (F8)"
 }

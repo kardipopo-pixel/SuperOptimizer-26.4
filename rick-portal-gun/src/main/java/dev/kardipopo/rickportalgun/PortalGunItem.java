@@ -12,6 +12,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -31,9 +32,10 @@ public final class PortalGunItem extends Item {
     @Override
     public ActionResult use(World world, PlayerEntity user, Hand hand) {
         if (world.isClient()) return ActionResult.SUCCESS;
+        if (!(world instanceof ServerWorld serverWorld)) return ActionResult.FAIL;
 
-        ServerWorld serverWorld = (ServerWorld) world;
         UUID owner = user.getUuid();
+        PortalServer.PlayerConfig config = PortalServer.getConfig(owner);
 
         if (user.isSneaking()) {
             int removed = removePortals(serverWorld, owner);
@@ -56,27 +58,63 @@ public final class PortalGunItem extends Item {
         }
 
         Direction normal = blockHit.getSide();
-        Vec3d pos = blockHit.getPos().add(Vec3d.of(normal.getVector()).multiply(0.02));
+        BlockPos block = blockHit.getBlockPos();
+        Vec3d surface = new Vec3d(block.getX() + 0.5, block.getY() + 0.5, block.getZ() + 0.5);
+        if (normal.getAxis() == Direction.Axis.X) {
+            surface = new Vec3d(block.getX() + (normal == Direction.EAST ? 1.0 : 0.0), surface.y, surface.z);
+        } else if (normal.getAxis() == Direction.Axis.Y) {
+            surface = new Vec3d(surface.x, block.getY() + (normal == Direction.UP ? 1.0 : 0.0), surface.z);
+        } else {
+            surface = new Vec3d(surface.x, surface.y, block.getZ() + (normal == Direction.SOUTH ? 1.0 : 0.0));
+        }
+        Vec3d pos = surface.add(Vec3d.of(normal.getVector()).multiply(0.025));
+
+        String targetDimension = null;
+        Vec3d targetPos = null;
+        char side = existing.isEmpty() ? 'A' : 'B';
+
+        if (config.destinationMode()) {
+            if (PortalServer.resolveWorld(serverWorld.getServer(), config.dimension()) == null) {
+                user.sendMessage(Text.literal("§c[Рик C-137] Измерение назначения не найдено. Открой F8 и выбери его снова."));
+                return ActionResult.FAIL;
+            }
+            targetDimension = config.dimension();
+            targetPos = new Vec3d(config.x() + 0.5, config.y() + 0.05, config.z() + 0.5);
+            side = 'D';
+        }
 
         ArmorStandEntity stand = EntityType.ARMOR_STAND.create(serverWorld, SpawnReason.TRIGGERED);
         if (stand == null) return ActionResult.FAIL;
 
-        char side = existing.isEmpty() ? 'A' : 'B';
         stand.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0.0f, 0.0f);
         stand.setInvisible(true);
         stand.setInvulnerable(true);
         stand.setNoGravity(true);
         stand.setCustomNameVisible(false);
-        stand.setCustomName(new PortalMarker(owner, side, normal, null).encode());
-        serverWorld.spawnEntity(stand);
+        stand.setCustomName(new PortalMarker(owner, side, normal, targetDimension, targetPos).encode());
+        if (!serverWorld.spawnEntity(stand)) {
+            stand.discard();
+            return ActionResult.FAIL;
+        }
 
-        if (side == 'B') {
+        if (config.destinationMode()) {
+            user.sendMessage(Text.literal("§a[Рик C-137] §fПортал настроен на §e" + config.dimension()
+                    + " " + config.x() + " " + config.y() + " " + config.z()));
+        } else if (side == 'B') {
             ArmorStandEntity first = existing.get(0);
             PortalMarker firstData = PortalMarker.read(first);
             if (firstData != null) {
+                String currentDimension = serverWorld.getRegistryKey().getValue().toString();
                 Vec3d firstPos = new Vec3d(first.getX(), first.getY(), first.getZ());
-                first.setCustomName(new PortalMarker(firstData.owner(), firstData.side(), firstData.normal(), pos).encode());
-                stand.setCustomName(new PortalMarker(owner, 'B', normal, firstPos).encode());
+                Vec3d firstExit = firstPos.add(Vec3d.of(firstData.normal().getVector()).multiply(1.15));
+                Vec3d secondExit = pos.add(Vec3d.of(normal.getVector()).multiply(1.15));
+
+                first.setCustomName(new PortalMarker(owner, firstData.side(), firstData.normal(),
+                        currentDimension, secondExit).encode());
+                stand.setCustomName(new PortalMarker(owner, 'B', normal,
+                        currentDimension, firstExit).encode());
+            } else {
+                stand.setCustomName(new PortalMarker(owner, 'B', normal, null, null).encode());
             }
         }
 

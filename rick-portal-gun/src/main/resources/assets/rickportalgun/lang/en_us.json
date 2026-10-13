@@ -1,4 +1,6 @@
 {
   "item.rickportalgun.portal_gun": "C-137 Portal Gun",
-  "message.rickportalgun.already_two": "You already have two portals. Sneak + right click to remove them."
+  "message.rickportalgun.already_two": "You already have two portals. Shift + right-click to remove them.",
+  "key.category.rickportalgun": "C-137 Portal Gun",
+  "key.rickportalgun.open_settings": "Portal gun settings (F8)"
 }
