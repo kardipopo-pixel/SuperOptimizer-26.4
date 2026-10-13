@@ -47,7 +47,7 @@ public final class PortalGunItem extends Item {
         }
 
         List<ArmorStandEntity> existing = findPortals(serverWorld, owner);
-        if (existing.size() >= 2) {
+        if (!config.destinationMode() && existing.size() >= 2) {
             user.sendMessage(Text.translatable("message.rickportalgun.already_two"), true);
             return ActionResult.SUCCESS;
         }
@@ -80,6 +80,9 @@ public final class PortalGunItem extends Item {
             }
             targetDimension = config.dimension();
             targetPos = new Vec3d(config.x() + 0.5, config.y() + 0.05, config.z() + 0.5);
+            // Destination mode is a single waypoint portal: replace the old anchor on each shot.
+            removePortals(serverWorld, owner);
+            existing = List.of();
             side = 'D';
         }
 
@@ -106,8 +109,8 @@ public final class PortalGunItem extends Item {
             if (firstData != null) {
                 String currentDimension = serverWorld.getRegistryKey().getValue().toString();
                 Vec3d firstPos = new Vec3d(first.getX(), first.getY(), first.getZ());
-                Vec3d firstExit = firstPos.add(Vec3d.of(firstData.normal().getVector()).multiply(2.75));
-                Vec3d secondExit = pos.add(Vec3d.of(normal.getVector()).multiply(2.75));
+                Vec3d firstExit = firstPos.add(Vec3d.of(firstData.normal().getVector()).multiply(1.2));
+                Vec3d secondExit = pos.add(Vec3d.of(normal.getVector()).multiply(1.2));
 
                 first.setCustomName(new PortalMarker(owner, firstData.side(), firstData.normal(),
                         currentDimension, secondExit).encode());
