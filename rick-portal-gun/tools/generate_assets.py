@@ -82,7 +82,7 @@ def display(x,y,w,h):
         for gy,row in enumerate(glyphs[ch]):
             for gx,bit in enumerate(row):
                 px = cursor + gx*scale
-                py = 5 + gy*scale
+                py = 3 + gy*scale
                 if bit == "1" and px <= x < px+scale and py <= y < py+scale:
                     out = [255,220,80,255]
         cursor += 6
@@ -93,7 +93,7 @@ write_png(ITEM/"portal_gun_body.png", 32, 32, body)
 write_png(ITEM/"portal_gun_dark.png", 32, 32, dark)
 write_png(ITEM/"portal_gun_glow.png", 32, 32, glow)
 write_png(ITEM/"portal_gun_emitter.png", 32, 32, emitter)
-write_png(ITEM/"portal_gun_display.png", 32, 32, display)
+write_png(ITEM/"portal_gun_display.png", 32, 16, display)
 
 def sound(path, mode):
     rate = 48000
