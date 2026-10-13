@@ -119,7 +119,6 @@ public final class PortalServer {
     private static void tick(ServerWorld world) {
         COOLDOWNS.replaceAll((uuid, value) -> value - 1);
         COOLDOWNS.entrySet().removeIf(entry -> entry.getValue() <= 0);
-        RickChallenge.tick(world);
 
         for (ServerPlayerEntity player : world.getPlayers()) {
             if (COOLDOWNS.containsKey(player.getUuid())) continue;
