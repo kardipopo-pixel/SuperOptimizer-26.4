@@ -1,7 +1,7 @@
 package dev.kardipopo.rickportalgun;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.decoration.MarkerEntity;
+import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -12,12 +12,12 @@ public record PortalMarker(UUID owner, char side, Direction normal, String targe
     private static final String PREFIX = "rpg|";
 
     public static boolean is(Entity entity) {
-        return entity instanceof MarkerEntity stand
+        return entity instanceof ArmorStandEntity stand
                 && stand.getCustomName() != null
                 && stand.getCustomName().getString().startsWith(PREFIX);
     }
 
-    public static PortalMarker read(MarkerEntity stand) {
+    public static PortalMarker read(ArmorStandEntity stand) {
         if (stand.getCustomName() == null) return null;
         String[] parts = stand.getCustomName().getString().split("\\|", -1);
         if (parts.length < 5 || !parts[0].equals("rpg")) return null;

@@ -7,7 +7,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.decoration.MarkerEntity;
+import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -125,7 +125,7 @@ public final class PortalServer {
             if (COOLDOWNS.containsKey(player.getUuid())) continue;
 
             Box area = player.getBoundingBox().expand(1.65);
-            for (MarkerEntity stand : world.getEntitiesByType(EntityType.MARKER, area, PortalMarker::is)) {
+            for (ArmorStandEntity stand : world.getEntitiesByType(EntityType.ARMOR_STAND, area, PortalMarker::is)) {
                 PortalMarker marker = PortalMarker.read(stand);
                 if (marker == null || marker.target() == null) continue;
                 if (player.squaredDistanceTo(stand) > 2.25 * 2.25) continue;

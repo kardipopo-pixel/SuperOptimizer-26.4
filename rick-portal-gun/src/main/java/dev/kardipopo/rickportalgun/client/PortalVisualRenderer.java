@@ -12,7 +12,7 @@ import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.decoration.MarkerEntity;
+import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
@@ -42,8 +42,8 @@ public final class PortalVisualRenderer {
         MatrixStack matrices = context.matrices();
         VertexConsumer consumer = context.consumers().getBuffer(LAYER);
 
-        for (MarkerEntity stand : client.world.getEntitiesByType(
-                EntityType.MARKER, area, PortalMarker::is)) {
+        for (ArmorStandEntity stand : client.world.getEntitiesByType(
+                EntityType.ARMOR_STAND, area, PortalMarker::is)) {
             PortalMarker marker = PortalMarker.read(stand);
             if (marker == null) continue;
 
