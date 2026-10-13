@@ -75,7 +75,7 @@ public final class PortalGunItem extends Item {
 
         if (config.destinationMode()) {
             if (PortalServer.resolveWorld(serverWorld.getServer(), config.dimension()) == null) {
-                user.sendMessage(Text.literal("§c[Рик C-137] Измерение назначения не найдено. Открой F8 и выбери его снова."));
+                user.sendMessage(Text.literal("§c[Рик C-137] Измерение назначения не найдено. Открой F8 и выбери его снова."), false);
                 return ActionResult.FAIL;
             }
             targetDimension = config.dimension();
@@ -99,7 +99,7 @@ public final class PortalGunItem extends Item {
 
         if (config.destinationMode()) {
             user.sendMessage(Text.literal("§a[Рик C-137] §fПортал настроен на §e" + config.dimension()
-                    + " " + config.x() + " " + config.y() + " " + config.z()));
+                    + " " + config.x() + " " + config.y() + " " + config.z()), false);
         } else if (side == 'B') {
             ArmorStandEntity first = existing.get(0);
             PortalMarker firstData = PortalMarker.read(first);

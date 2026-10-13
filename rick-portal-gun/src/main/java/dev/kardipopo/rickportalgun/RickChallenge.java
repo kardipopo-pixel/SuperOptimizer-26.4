@@ -53,9 +53,9 @@ public final class RickChallenge {
             return 1;
         }
 
-        ServerWorld world = player.getServerWorld();
+        ServerWorld world = (ServerWorld) player.getWorld();
         BlockPos origin = player.getBlockPos();
-        int baseY = Math.min(origin.getY() + 5, world.getTopY() - 12);
+        int baseY = Math.min(origin.getY() + 5, world.getBottomY() + world.getHeight() - 12);
         if (baseY < world.getBottomY() + 8) {
             player.sendMessage(Text.literal("§c[Рик C-137] Здесь не получится собрать курс. Перейди в обычное открытое место."));
             return 0;
@@ -114,7 +114,7 @@ public final class RickChallenge {
             world.setBlockState(block, Blocks.LIME_STAINED_GLASS.getDefaultState());
         }
 
-        Vec3d returnPosition = player.getPos();
+        Vec3d returnPosition = new Vec3d(player.getX(), player.getY(), player.getZ());
         float returnYaw = player.getYaw();
         float returnPitch = player.getPitch();
         BlockPos start = course.checkpoints().get(0);
@@ -142,7 +142,7 @@ public final class RickChallenge {
                 iterator.remove();
                 continue;
             }
-            if (player.getServerWorld() != world) {
+            if (player.getWorld() != world) {
                 restore(world, challenge);
                 iterator.remove();
                 continue;
