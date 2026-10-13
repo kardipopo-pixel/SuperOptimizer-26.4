@@ -53,7 +53,7 @@ public final class RickChallenge {
             return 1;
         }
 
-        ServerWorld world = (ServerWorld) player.getWorld();
+        ServerWorld world = (ServerWorld) player.getEntityWorld();
         BlockPos origin = player.getBlockPos();
         int baseY = Math.min(origin.getY() + 5, world.getBottomY() + world.getHeight() - 12);
         if (baseY < world.getBottomY() + 8) {
@@ -142,7 +142,7 @@ public final class RickChallenge {
                 iterator.remove();
                 continue;
             }
-            if (player.getWorld() != world) {
+            if (player.getEntityWorld() != world) {
                 restore(world, challenge);
                 iterator.remove();
                 continue;
