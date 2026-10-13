@@ -20,7 +20,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class RickChallenge {
-    private static final int COURSE_TIMEOUT_TICKS = 24_000;
+    private static final int COURSE_TIMEOUT_TICKS = 12_000;
     private static final int[] HEIGHTS = {0, 0, 1, 0, 1, 2, 1};
     private static final int[] LATERAL = {0, 0, 1, -1, 0, 1, 0};
     private static final Map<UUID, ActiveChallenge> ACTIVE = new HashMap<>();
@@ -155,6 +155,12 @@ public final class RickChallenge {
                 continue;
             }
 
+            if (player.getY() < challenge.lowestY - 2.5) {
+                finish(world, player, challenge, false);
+                iterator.remove();
+                continue;
+            }
+
             if (challenge.progress < challenge.checkpoints.size()
                     && standingNear(player, challenge.checkpoints.get(challenge.progress))) {
                 challenge.progress++;
@@ -216,6 +222,7 @@ public final class RickChallenge {
         private final Vec3d returnPosition;
         private final float returnYaw;
         private final float returnPitch;
+        private final int lowestY;
         private int progress;
         private int ticksRemaining = COURSE_TIMEOUT_TICKS;
 
@@ -229,6 +236,7 @@ public final class RickChallenge {
             this.returnPosition = returnPosition;
             this.returnYaw = returnYaw;
             this.returnPitch = returnPitch;
+            this.lowestY = checkpoints.stream().mapToInt(BlockPos::getY).min().orElse(0);
         }
     }
 }

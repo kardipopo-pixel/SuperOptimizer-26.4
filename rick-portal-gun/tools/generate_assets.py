@@ -50,6 +50,25 @@ def glow(x,y,w,h):
     p = .5 + .5*math.sin((x+y*1.7)/w*16)
     return bytes((int(30+35*p), int(215+40*p), int(75+85*p), 255))
 
+def emitter(x,y,w,h):
+    nx = (x + .5) / w - .5
+    ny = (y + .5) / h - .5
+    d = math.sqrt((nx/.48)**2 + (ny/.48)**2)
+    angle = math.atan2(ny, nx)
+    swirl = .5 + .5*math.sin(7*angle + 18*d + 4*math.sin(angle*3))
+    grain = .5 + .5*math.sin(x*1.7 + y*2.3 + math.sin(angle*5)*4)
+    if d > .97:
+        return bytes((39, 43, 44, 255))
+    if d > .75:
+        rim = min(1.0, max(0.0, (d-.75)/.22))
+        return bytes((int(20+20*rim), int(85+45*rim), int(39+18*rim), 255))
+    if d > .57:
+        light = min(1.0, max(0.0, (d-.57)/.18))
+        pulse = .65 + .35*swirl
+        return bytes((int(18+8*light), int(195+60*pulse), int(65+70*pulse), 255))
+    core = max(0.0, 1.0-d/.60)
+    return bytes((int(6+14*swirl), int(50+145*core+40*swirl), int(32+62*core+45*grain), 255))
+
 def display(x,y,w,h):
     out = [95,22,30,255]
     glyphs = {"C":["111","100","100","100","111"],
@@ -73,6 +92,7 @@ write_png(MISC/"portal_green.png", 96, 128, portal)
 write_png(ITEM/"portal_gun_body.png", 32, 32, body)
 write_png(ITEM/"portal_gun_dark.png", 32, 32, dark)
 write_png(ITEM/"portal_gun_glow.png", 32, 32, glow)
+write_png(ITEM/"portal_gun_emitter.png", 32, 32, emitter)
 write_png(ITEM/"portal_gun_display.png", 32, 32, display)
 
 def sound(path, mode):

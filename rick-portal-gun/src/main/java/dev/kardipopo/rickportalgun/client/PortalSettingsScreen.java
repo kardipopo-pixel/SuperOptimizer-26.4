@@ -77,6 +77,10 @@ public final class PortalSettingsScreen extends Screen {
             int x = Integer.parseInt(xField.getText().trim());
             int y = Integer.parseInt(yField.getText().trim());
             int z = Integer.parseInt(zField.getText().trim());
+            if (x < -30000000 || x > 30000000 || z < -30000000 || z > 30000000) {
+                status = "X и Z должны быть от -30 000 000 до 30 000 000.";
+                return;
+            }
             if (y < -64 || y > 320) {
                 status = "Y должен быть в диапазоне от -64 до 320.";
                 return;
@@ -111,9 +115,9 @@ public final class PortalSettingsScreen extends Screen {
         context.drawCenteredTextWithShadow(this.textRenderer, Text.literal("F8 открывает меню только когда пушка в руке"), this.width / 2, this.height / 2 - 95, 0xAAAAAA);
         int center = this.width / 2;
         int top = this.height / 2 - 14;
-        context.drawTextWithShadow(this.textRenderer, "X", center - 115, top + 7, 0xFFFFFF);
-        context.drawTextWithShadow(this.textRenderer, "Y", center - 34, top + 7, 0xFFFFFF);
-        context.drawTextWithShadow(this.textRenderer, "Z", center + 47, top + 7, 0xFFFFFF);
+        context.drawTextWithShadow(this.textRenderer, "X", center - 115, top - 11, 0xFFFFFF);
+        context.drawTextWithShadow(this.textRenderer, "Y", center - 34, top - 11, 0xFFFFFF);
+        context.drawTextWithShadow(this.textRenderer, "Z", center + 47, top - 11, 0xFFFFFF);
         context.drawCenteredTextWithShadow(this.textRenderer,
                 Text.literal(destinationMode ? "При режиме координат порталы ведут прямо в выбранную точку." : "В этом режиме второй портал будет парой первого."),
                 center, top + 32, 0xDDDDDD);
