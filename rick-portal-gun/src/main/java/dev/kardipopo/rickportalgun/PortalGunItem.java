@@ -105,8 +105,8 @@ public final class PortalGunItem extends Item {
             if (firstData != null) {
                 String currentDimension = serverWorld.getRegistryKey().getValue().toString();
                 Vec3d firstPos = new Vec3d(first.getX(), first.getY(), first.getZ());
-                Vec3d firstExit = firstPos.add(Vec3d.of(firstData.normal().getVector()).multiply(1.15));
-                Vec3d secondExit = pos.add(Vec3d.of(normal.getVector()).multiply(1.15));
+                Vec3d firstExit = firstPos.add(Vec3d.of(firstData.normal().getVector()).multiply(2.75));
+                Vec3d secondExit = pos.add(Vec3d.of(normal.getVector()).multiply(2.75));
 
                 first.setCustomName(new PortalMarker(owner, firstData.side(), firstData.normal(),
                         currentDimension, secondExit).encode());

@@ -26,7 +26,7 @@ public final class PortalVisualRenderer {
     private PortalVisualRenderer() {}
 
     public static void initialize() {
-        WorldRenderEvents.AFTER_ENTITIES.register(PortalVisualRenderer::render);
+        WorldRenderEvents.BEFORE_TRANSLUCENT.register(PortalVisualRenderer::render);
     }
 
     private static void render(WorldRenderContext context) {
@@ -51,11 +51,11 @@ public final class PortalVisualRenderer {
             Vec3d up;
             Vec3d right;
             if (marker.normal() == Direction.UP || marker.normal() == Direction.DOWN) {
-                up = new Vec3d(0, 0, 1);
                 right = new Vec3d(1, 0, 0);
+                up = marker.normal() == Direction.UP ? new Vec3d(0, 0, -1) : new Vec3d(0, 0, 1);
             } else {
                 up = new Vec3d(0, 1, 0);
-                right = normal.crossProduct(up).normalize();
+                right = up.crossProduct(normal).normalize();
             }
 
             Vec3d center = new Vec3d(stand.getX(), stand.getY(), stand.getZ()).add(normal.multiply(0.01));

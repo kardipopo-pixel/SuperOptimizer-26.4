@@ -40,6 +40,10 @@ public final class PortalServer {
     private PortalServer() {}
 
     public static void initialize() {
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            COOLDOWNS.replaceAll((uuid, value) -> value - 1);
+            COOLDOWNS.entrySet().removeIf(entry -> entry.getValue() <= 0);
+        });
         ServerTickEvents.END_WORLD_TICK.register(PortalServer::tick);
         RickChallenge.initialize();
 
@@ -117,9 +121,6 @@ public final class PortalServer {
     }
 
     private static void tick(ServerWorld world) {
-        COOLDOWNS.replaceAll((uuid, value) -> value - 1);
-        COOLDOWNS.entrySet().removeIf(entry -> entry.getValue() <= 0);
-
         for (ServerPlayerEntity player : world.getPlayers()) {
             if (COOLDOWNS.containsKey(player.getUuid())) continue;
 
