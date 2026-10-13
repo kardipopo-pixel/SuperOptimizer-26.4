@@ -124,7 +124,7 @@ public final class PortalGunItem extends Item {
     }
 
     private static int removePortals(ServerWorld world, UUID owner) {
-        List<MarkerEntity> matches = world.getEntitiesByType(
+        List<ArmorStandEntity> matches = world.getEntitiesByType(
                 EntityType.ARMOR_STAND, WORLD_BOX,
                 stand -> {
                     PortalMarker marker = PortalMarker.read(stand);
@@ -134,9 +134,9 @@ public final class PortalGunItem extends Item {
         return matches.size();
     }
 
-    private static List<MarkerEntity> findPortals(ServerWorld world, UUID owner) {
+    private static List<ArmorStandEntity> findPortals(ServerWorld world, UUID owner) {
         return world.getEntitiesByType(
-                EntityType.MARKER, WORLD_BOX,
+                EntityType.ARMOR_STAND, WORLD_BOX,
                 stand -> {
                     PortalMarker marker = PortalMarker.read(stand);
                     return marker != null && marker.owner().equals(owner);
