@@ -23,7 +23,8 @@ public abstract class HeldItemRendererMixin {
         if (!itemStack.isOf(ModItems.PORTAL_GUN)) return;
 
         float time = (player.age + tickProgress) * 0.08f;
-        float use = Math.max(0.0f, 1.0f - swingProgress * 4.0f);
+        float swing = Math.max(0.0f, Math.min(1.0f, swingProgress));
+        float use = (float) Math.sin(swing * Math.PI);
         float idle = (float) Math.sin(time) * 0.012f;
         float sway = (float) Math.cos(time * 0.77f) * 0.7f;
 
