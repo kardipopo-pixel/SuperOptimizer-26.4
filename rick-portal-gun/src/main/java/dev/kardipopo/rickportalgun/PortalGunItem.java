@@ -129,13 +129,13 @@ public final class PortalGunItem extends Item {
                     PortalMarker marker = PortalMarker.read(stand);
                     return marker != null && marker.owner().equals(owner);
                 });
-        for (MarkerEntity stand : matches stand.discard();
+        for (MarkerEntity stand : matches) stand.discard();
         return matches.size();
     }
 
-    private static List<ArmorStandEntity> findPortals(ServerWorld world, UUID owner) {
+    private static List<MarkerEntity> findPortals(ServerWorld world, UUID owner) {
         return world.getEntitiesByType(
-                EntityType.ARMOR_STAND, WORLD_BOX,
+                EntityType.MARKER, WORLD_BOX,
                 stand -> {
                     PortalMarker marker = PortalMarker.read(stand);
                     return marker != null && marker.owner().equals(owner);
