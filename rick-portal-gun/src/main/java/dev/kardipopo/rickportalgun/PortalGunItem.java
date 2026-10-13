@@ -38,7 +38,7 @@ public final class PortalGunItem extends Item {
         PortalServer.PlayerConfig config = PortalServer.getConfig(owner);
 
         if (user.isSneaking()) {
-            int removed = removePortals(serverWorld, owner);
+            int removed = removePortals(serverWorld.getServer(), owner);
             if (removed > 0) {
                 world.playSound(null, user.getX(), user.getY(), user.getZ(),
                         ModSounds.PORTAL_REMOVE, SoundCategory.PLAYERS, 1.0f, 1.0f);
@@ -81,7 +81,7 @@ public final class PortalGunItem extends Item {
             targetDimension = config.dimension();
             targetPos = new Vec3d(config.x() + 0.5, config.y() + 0.05, config.z() + 0.5);
             // Destination mode is a single waypoint portal: replace the old anchor on each shot.
-            removePortals(serverWorld, owner);
+            removePortals(serverWorld.getServer(), owner);
             existing = List.of();
             side = 'D';
         }
@@ -126,7 +126,15 @@ public final class PortalGunItem extends Item {
         return ActionResult.SUCCESS;
     }
 
-    private static int removePortals(ServerWorld world, UUID owner) {
+    private static int removePortals(net.minecraft.server.MinecraftServer server, UUID owner) {
+        int removed = 0;
+        for (ServerWorld world : server.getWorlds()) {
+            removed += removePortalsInWorld(world, owner);
+        }
+        return removed;
+    }
+
+    private static int removePortalsInWorld(ServerWorld world, UUID owner) {
         List<ArmorStandEntity> matches = world.getEntitiesByType(
                 EntityType.ARMOR_STAND, WORLD_BOX,
                 stand -> {
