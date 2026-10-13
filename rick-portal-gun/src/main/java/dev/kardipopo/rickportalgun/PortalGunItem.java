@@ -2,7 +2,7 @@ package dev.kardipopo.rickportalgun;
 
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.entity.decoration.MarkerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.server.world.ServerWorld;
@@ -46,7 +46,7 @@ public final class PortalGunItem extends Item {
             return ActionResult.SUCCESS;
         }
 
-        List<ArmorStandEntity> existing = findPortals(serverWorld, owner);
+        List<MarkerEntity> existing = findPortals(serverWorld, owner);
         if (existing.size() >= 2) {
             user.sendMessage(Text.translatable("message.rickportalgun.already_two"), true);
             return ActionResult.SUCCESS;
@@ -83,11 +83,10 @@ public final class PortalGunItem extends Item {
             side = 'D';
         }
 
-        ArmorStandEntity stand = EntityType.ARMOR_STAND.create(serverWorld, SpawnReason.TRIGGERED);
+        MarkerEntity stand = EntityType.MARKER.create(serverWorld, SpawnReason.TRIGGERED);
         if (stand == null) return ActionResult.FAIL;
 
         stand.refreshPositionAndAngles(pos.x, pos.y, pos.z, 0.0f, 0.0f);
-        stand.setInvisible(true);
         stand.setInvulnerable(true);
         stand.setNoGravity(true);
         stand.setCustomNameVisible(false);
@@ -101,7 +100,7 @@ public final class PortalGunItem extends Item {
             user.sendMessage(Text.literal("§a[Рик C-137] §fПортал настроен на §e" + config.dimension()
                     + " " + config.x() + " " + config.y() + " " + config.z()), false);
         } else if (side == 'B') {
-            ArmorStandEntity first = existing.get(0);
+            MarkerEntity first = existing.get(0);
             PortalMarker firstData = PortalMarker.read(first);
             if (firstData != null) {
                 String currentDimension = serverWorld.getRegistryKey().getValue().toString();
@@ -124,13 +123,13 @@ public final class PortalGunItem extends Item {
     }
 
     private static int removePortals(ServerWorld world, UUID owner) {
-        List<ArmorStandEntity> matches = world.getEntitiesByType(
-                EntityType.ARMOR_STAND, WORLD_BOX,
+        List<MarkerEntity> matches = world.getEntitiesByType(
+                EntityType.MARKER, WORLD_BOX,
                 stand -> {
                     PortalMarker marker = PortalMarker.read(stand);
                     return marker != null && marker.owner().equals(owner);
                 });
-        for (ArmorStandEntity stand : matches) stand.discard();
+        for (MarkerEntity stand : matches stand.discard();
         return matches.size();
     }
 
